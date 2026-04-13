@@ -65,14 +65,24 @@ def load_config(root: Path) -> ZharConfig:
 
 
 def find_zhar_root(start: Path) -> Path | None:
-    """Walk up the directory tree from *start* looking for a ``.zhar/`` directory.
+    """Walk up from *start* looking for a project-local ``.zhar/`` directory.
 
-    Returns the ``.zhar/`` path if found, or ``None``.
+    Returns the ``.zhar/`` path if found, or ``None``. A user-level
+    ``Path.home() / '.zhar'`` is ignored unless it also looks like an actual
+    project root instead of the harness cache location.
     """
     current = start.resolve()
+    home_zhar = Path.home().resolve() / ".zhar"
     while True:
         candidate = current / ".zhar"
         if candidate.is_dir():
+            if candidate == home_zhar:
+                has_project_layout = any(
+                    (candidate / entry).exists()
+                    for entry in ("mem", "cfg", "config.toml")
+                )
+                if not has_project_layout:
+                    return None
             return candidate
         parent = current.parent
         if parent == current:

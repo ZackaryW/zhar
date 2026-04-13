@@ -24,6 +24,16 @@ class TestFindZharRoot:
     def test_returns_none_when_not_found(self, tmp_path):
         assert find_zhar_root(tmp_path) is None
 
+    def test_ignores_home_level_cache_dir(self, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        nested = home / "work" / "repo"
+        (home / ".zhar").mkdir(parents=True)
+        nested.mkdir(parents=True)
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("HOME", str(home))
+
+        assert find_zhar_root(nested) is None
+
     def test_stops_at_filesystem_root(self, tmp_path):
         # Should not raise, just return None
         result = find_zhar_root(Path("/"))
