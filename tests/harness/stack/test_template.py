@@ -1,4 +1,4 @@
-"""Tests for src/zhar/harness/stack/template.py
+"""Tests for src/zhar/stack/template.py
 
 Grammar recap
 -------------
@@ -37,7 +37,7 @@ from typing import Any
 
 import pytest
 
-from zhar.harness.stack.template import (
+from zhar.stack.template import (
     TemplateContext,
     TemplateError,
     render_template,

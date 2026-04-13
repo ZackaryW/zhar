@@ -1,14 +1,5 @@
-"""Harness installer — writes agent instruction files.
+"""Agent installer — write generated agent instruction files from project state."""
 
-``install_agent_file`` renders a ``.github/agents/zhar.agent.md`` (or any
-target path) from a combination of:
-
-- A project memory snapshot (via ``export_text``)
-- Project facts (key-value flags from ``Facts``)
-
-The file is designed to be consumed by AI agents as a system prompt addition
-that gives them live project context without manual maintenance.
-"""
 from __future__ import annotations
 
 from pathlib import Path
@@ -36,32 +27,16 @@ def install_agent_file(
     facts: Facts | None,
     output: Path,
 ) -> Path:
-    """Render and write the agent instruction file to *output*.
-
-    Parameters
-    ----------
-    store:
-        The MemStore to export memory from.
-    facts:
-        Optional Facts instance.  When provided, a facts section is prepended.
-    output:
-        Destination path (typically ``.github/agents/zhar.agent.md``).
-
-    Returns
-    -------
-    Path
-        The path the file was written to.
-    """
+    """Render and write the agent instruction file to *output*."""
     output.parent.mkdir(parents=True, exist_ok=True)
 
     sections: list[str] = [_HEADER]
-
     if facts:
         all_facts = facts.all()
         if all_facts:
             lines = ["## Project facts\n"]
-            for k, v in sorted(all_facts.items()):
-                lines.append(f"- **{k}**: {v}")
+            for key, value in sorted(all_facts.items()):
+                lines.append(f"- **{key}**: {value}")
             sections.append("\n".join(lines) + "\n")
 
     snapshot = export_text(
@@ -76,10 +51,7 @@ def install_agent_file(
 
 
 def uninstall_agent_file(output: Path) -> bool:
-    """Remove the agent file at *output*.
-
-    Returns True if the file existed and was removed, False otherwise.
-    """
+    """Remove the generated agent file at *output* if it exists."""
     if output.exists():
         output.unlink()
         return True

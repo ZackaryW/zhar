@@ -1,8 +1,8 @@
-"""TDD: zhar.harness.installer — agent file writer."""
+"""TDD: zhar.agents.installer — agent file writer."""
 from types import SimpleNamespace
 from pathlib import Path
 import pytest
-from zhar.harness.installer import install_agent_file, uninstall_agent_file
+from zhar.agents.installer import install_agent_file, uninstall_agent_file
 from zhar.mem.store import MemStore
 from zhar.mem.node import make_node
 from zhar.utils.facts import Facts
@@ -34,8 +34,6 @@ def facts(tmp_path) -> Facts:
 def out_path(tmp_path) -> Path:
     return tmp_path / ".github" / "agents" / "zhar.agent.md"
 
-
-# ── install ───────────────────────────────────────────────────────────────────
 
 class TestInstall:
     def test_creates_output_file(self, store, facts, out_path):
@@ -83,9 +81,9 @@ class TestInstall:
 
         outputs = {
             ("rev-parse", "--show-toplevel"): "D:/repo\n",
-            ("status", "--short", "--", "src/zhar/harness/stack/template.py"): " M src/zhar/harness/stack/template.py\n",
-            ("diff", "--stat", "--", "src/zhar/harness/stack/template.py"): " src/zhar/harness/stack/template.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
-            ("log", "--oneline", "-n", "5", "--", "src/zhar/harness/stack/template.py"): "abc1234 template parser\n",
+            ("status", "--short", "--", "src/zhar/stack/template.py"): " M src/zhar/stack/template.py\n",
+            ("diff", "--stat", "--", "src/zhar/stack/template.py"): " src/zhar/stack/template.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/stack/template.py"): "abc1234 template parser\n",
         }
 
         def fake_run(args, cwd, capture_output, text, check):
@@ -98,7 +96,7 @@ class TestInstall:
             group="code_history",
             node_type="file_change",
             summary="template parser",
-            source="src/zhar/harness/stack/template.py::26::%ZHAR:ffff%",
+            source="src/zhar/stack/template.py::26::%ZHAR:ffff%",
             metadata={"significance": "feature"},
         ))
 
@@ -110,8 +108,6 @@ class TestInstall:
         assert "Diff stat:" in content
 
 
-# ── uninstall ─────────────────────────────────────────────────────────────────
-
 class TestUninstall:
     def test_removes_existing_file(self, store, facts, out_path):
         install_agent_file(store, facts, out_path)
@@ -119,7 +115,7 @@ class TestUninstall:
         assert not out_path.exists()
 
     def test_noop_when_file_missing(self, out_path):
-        uninstall_agent_file(out_path)  # should not raise
+        uninstall_agent_file(out_path)
 
     def test_returns_true_when_removed(self, store, facts, out_path):
         install_agent_file(store, facts, out_path)

@@ -98,9 +98,9 @@ class TestSaveGet:
             group="code_history",
             node_type="file_change",
             summary="stack template parser",
-            source="src/zhar/harness/stack/template.py::26::%ZHAR:ffff%",
+            source="src/zhar/stack/template.py::26::%ZHAR:ffff%",
             metadata={
-                "path": "src/zhar/harness/stack/template.py",
+                "path": "src/zhar/stack/template.py",
                 "significance": "feature",
             },
         )

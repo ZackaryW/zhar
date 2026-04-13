@@ -276,9 +276,9 @@ class TestExport:
 
         outputs = {
             ("rev-parse", "--show-toplevel"): "D:/repo\n",
-            ("status", "--short", "--", "src/zhar/cli.py"): " M src/zhar/cli.py\n",
-            ("diff", "--stat", "--", "src/zhar/cli.py"): " src/zhar/cli.py | 6 ++++--\n 1 file changed, 4 insertions(+), 2 deletions(-)\n",
-            ("log", "--oneline", "-n", "5", "--", "src/zhar/cli.py"): "abc1234 cli export\n",
+            ("status", "--short", "--", "src/zhar/cli/memory.py"): " M src/zhar/cli/memory.py\n",
+            ("diff", "--stat", "--", "src/zhar/cli/memory.py"): " src/zhar/cli/memory.py | 6 ++++--\n 1 file changed, 4 insertions(+), 2 deletions(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/cli/memory.py"): "abc1234 cli export\n",
         }
 
         def fake_run(args, cwd, capture_output, text, check):
@@ -291,7 +291,7 @@ class TestExport:
             group="code_history",
             node_type="file_change",
             summary="cli export wiring",
-            source="src/zhar/cli.py::1::%ZHAR:ffff%",
+            source="src/zhar/cli/memory.py::1::%ZHAR:ffff%",
             metadata={"significance": "feature"},
         ))
 

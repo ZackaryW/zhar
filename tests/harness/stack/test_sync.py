@@ -1,4 +1,4 @@
-"""Tests for src/zhar/harness/stack/sync.py
+"""Tests for src/zhar/stack/sync.py
 
 sync_stack iterates over installed items in StackRegistry, locates their
 source files via BucketManager, renders them through the template engine
@@ -35,9 +35,9 @@ from typing import Any
 
 import pytest
 
-from zhar.harness.stack.registry import StackRegistry
-from zhar.harness.stack.sync import SyncResult, sync_stack
-from zhar.harness.stack.template import TemplateContext
+from zhar.stack.registry import StackRegistry
+from zhar.stack.sync import SyncResult, sync_stack
+from zhar.stack.template import TemplateContext
 
 
 # ── helpers / fixtures ────────────────────────────────────────────────────────

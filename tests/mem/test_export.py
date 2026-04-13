@@ -70,26 +70,26 @@ class TestExportGroup:
             group="code_history",
             node_type="file_change",
             summary="stack sync",
-            source="src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%",
+            source="src/zhar/stack/sync.py::14::%ZHAR:ffff%",
             metadata={
-                "path": "src/zhar/harness/stack/sync.py",
+                "path": "src/zhar/stack/sync.py",
                 "significance": "feature",
             },
         ))
 
         out = export_group(store, "code_history")
 
-        assert "source=src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%" in out
-        assert "path=src/zhar/harness/stack/sync.py" not in out
+        assert "source=src/zhar/stack/sync.py::14::%ZHAR:ffff%" in out
+        assert "path=src/zhar/stack/sync.py" not in out
 
     def test_can_include_runtime_context_for_code_history(self, tmp_path, monkeypatch):
         from zhar.mem.groups import code_history as code_history_group
 
         outputs = {
             ("rev-parse", "--show-toplevel"): "D:/repo\n",
-            ("status", "--short", "--", "src/zhar/harness/stack/sync.py"): " M src/zhar/harness/stack/sync.py\n",
-            ("diff", "--stat", "--", "src/zhar/harness/stack/sync.py"): " src/zhar/harness/stack/sync.py | 4 +++-\n 1 file changed, 3 insertions(+), 1 deletion(-)\n",
-            ("log", "--oneline", "-n", "5", "--", "src/zhar/harness/stack/sync.py"): "abc1234 stack sync cleanup\n",
+            ("status", "--short", "--", "src/zhar/stack/sync.py"): " M src/zhar/stack/sync.py\n",
+            ("diff", "--stat", "--", "src/zhar/stack/sync.py"): " src/zhar/stack/sync.py | 4 +++-\n 1 file changed, 3 insertions(+), 1 deletion(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/stack/sync.py"): "abc1234 stack sync cleanup\n",
         }
 
         def fake_run(args, cwd, capture_output, text, check):
@@ -102,7 +102,7 @@ class TestExportGroup:
             group="code_history",
             node_type="file_change",
             summary="stack sync",
-            source="src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%",
+            source="src/zhar/stack/sync.py::14::%ZHAR:ffff%",
             metadata={"significance": "feature"},
         ))
 

@@ -1,4 +1,4 @@
-"""Tests for src/zhar/harness/stack/registry.py
+"""Tests for src/zhar/stack/registry.py
 
 StackRegistry manages the per-project manifest of installed stack items.
 Persisted at .zhar/cfg/stack.json.
@@ -31,7 +31,7 @@ from pathlib import Path
 
 import pytest
 
-from zhar.harness.stack.registry import StackRegistry
+from zhar.stack.registry import StackRegistry
 
 
 # ── fixtures ──────────────────────────────────────────────────────────────────

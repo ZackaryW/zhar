@@ -1,4 +1,4 @@
-"""Tests for src/zhar/harness/stack/bucket.py
+"""Tests for src/zhar/stack/bucket.py
 
 BucketManager wraps GhCacheDir (from zuu) and stores cached repos at
 ~/.zhar/stack/ globally.  The public surface:
@@ -19,7 +19,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from zhar.harness.stack.bucket import BucketManager
+from zhar.stack.bucket import BucketManager
 
 
 # ── fake GhCacheDir ───────────────────────────────────────────────────────────
