@@ -15,12 +15,22 @@ Commands
   verify    Run completeness checks
   install   Write .github/agents/zhar.agent.md
   uninstall Remove .github/agents/zhar.agent.md
+  stack     Manage stack buckets and installed items
+    bucket add <org/repo>           Add a bucket (clone/pull from GitHub)
+    bucket list                     List cached buckets
+    bucket remove <org/repo>        Remove a bucket from cache
+    install --kind <k> --source <p> <name> <org/repo>
+                                    Install an item from a bucket
+    uninstall <name>                Remove an installed item
+    list                            List installed items
+    sync [--dry-run]                Render and write all installed items
 
 Global options
 --------------
   --root PATH   Path to the .zhar/ root directory (default: auto-detect via
                 find_zhar_root, falling back to ./.zhar/)
 """
+# %ZHAR:db71%
 from __future__ import annotations
 
 import sys
@@ -30,6 +40,10 @@ from typing import Any
 import click
 
 from zhar.harness.installer import install_agent_file, uninstall_agent_file
+from zhar.harness.stack.bucket import BucketManager
+from zhar.harness.stack.registry import StackRegistry
+from zhar.harness.stack.sync import sync_stack
+from zhar.harness.stack.template import TemplateContext
 from zhar.mem.export import export_text
 from zhar.mem.gc import run_gc
 from zhar.mem.group import validate_node_metadata
@@ -82,7 +96,7 @@ def _format_node(node) -> str:
     if node.source:
         lines.append(f"source:     {node.source}")
     if node.metadata:
-        for k, v in node.metadata.items():
+        for k, v in _visible_metadata(node):
             lines.append(f"meta.{k:<8}{v}")
     if node.custom:
         for k, v in node.custom.items():
@@ -94,6 +108,18 @@ def _format_node(node) -> str:
         lines.append("── content ──────────────────────────")
         lines.append(node.content)
     return "\n".join(lines)
+
+
+def _visible_metadata(node) -> list[tuple[str, Any]]:
+    """Return metadata items that should be shown in CLI output.
+
+    ``code_history/file_change`` nodes use ``source`` markers as the canonical
+    file locator, so redundant legacy ``path`` metadata is suppressed.
+    """
+    items = list(node.metadata.items())
+    if node.group == "code_history" and node.node_type == "file_change" and node.source:
+        return [(key, value) for key, value in items if key != "path"]
+    return items
 
 
 # ── CLI root group ────────────────────────────────────────────────────────────
@@ -431,17 +457,21 @@ def scan(ctx: click.Context, path: str, ext: tuple[str, ...], dry_run: bool) -> 
               help="Limit to specific groups (repeatable).")
 @click.option("--status", multiple=True, metavar="STATUS",
               help="Limit to specific statuses (default: all).")
+@click.option("--with-runtime-context/--no-runtime-context", default=False,
+              help="Include runtime context gathered from group-defined tools.")
 @click.option("--out", default=None, type=click.Path(), metavar="FILE",
               help="Write output to FILE instead of stdout.")
 @click.pass_context
 def export(ctx: click.Context, group: tuple[str, ...], status: tuple[str, ...],
-           out: str | None) -> None:
+           with_runtime_context: bool, out: str | None) -> None:
     """Print a memory snapshot for agent context injection."""
-    store, _ = _open_store(ctx.obj["root"])
+    store, zhar_root = _open_store(ctx.obj["root"])
     text = export_text(
         store,
         groups=list(group) or None,
         statuses=list(status) or None,
+        include_runtime_context=with_runtime_context,
+        project_root=zhar_root.parent,
     )
     if out:
         Path(out).write_text(text, encoding="utf-8")
@@ -519,3 +549,168 @@ def uninstall(ctx: click.Context, out: str | None) -> None:
         click.echo(f"Removed: {output}")
     else:
         click.echo(f"Not found: {output}")
+
+
+# ── stack command group ───────────────────────────────────────────────────────
+
+# %ZHAR:7e64% %ZHAR:fabe%
+
+def _stack_helpers(ctx: click.Context) -> tuple[StackRegistry, BucketManager, Path]:
+    """Resolve registry, bucket manager, and zhar_root for stack commands."""
+    _, zhar_root = _open_store(ctx.obj["root"])
+    reg = StackRegistry(zhar_root / "cfg" / "stack.json")
+    bm = BucketManager()
+    return reg, bm, zhar_root
+
+
+@cli.group()
+@click.pass_context
+def stack(ctx: click.Context) -> None:
+    """Manage stack buckets and installed template items."""
+
+
+# ── stack bucket ──────────────────────────────────────────────────────────────
+
+@stack.group("bucket")
+@click.pass_context
+def stack_bucket(ctx: click.Context) -> None:
+    """Manage GitHub repo buckets (local cache)."""
+
+
+@stack_bucket.command("add")
+@click.argument("repo")
+@click.option("--branch", default="main", show_default=True,
+              help="Branch to clone/pull.")
+@click.pass_context
+def stack_bucket_add(ctx: click.Context, repo: str, branch: str) -> None:
+    """Add (or refresh) a bucket from GitHub."""
+    _, bm, _ = _stack_helpers(ctx)
+    click.echo(f"Fetching {repo}@{branch} …")
+    path = bm.add(repo, branch=branch)
+    click.echo(f"Cached at: {path}")
+
+
+@stack_bucket.command("list")
+@click.pass_context
+def stack_bucket_list(ctx: click.Context) -> None:
+    """List cached buckets."""
+    _, bm, _ = _stack_helpers(ctx)
+    repos = bm.list_repos()
+    if not repos:
+        click.echo("(no buckets cached)")
+        return
+    for r in repos:
+        click.echo(f"{r['repo']}  branch={r['branch']}  path={r['local_path']}")
+
+
+@stack_bucket.command("remove")
+@click.argument("repo")
+@click.option("--branch", default=None, help="Specific branch (default: all).")
+@click.pass_context
+def stack_bucket_remove(ctx: click.Context, repo: str, branch: str | None) -> None:
+    """Remove a cached bucket."""
+    _, bm, _ = _stack_helpers(ctx)
+    removed = bm.remove(repo, branch=branch)
+    if removed:
+        click.echo(f"Removed: {repo}")
+    else:
+        click.echo(f"Not found: {repo}")
+
+
+# ── stack install / uninstall / list ─────────────────────────────────────────
+
+@stack.command("install")
+@click.argument("name")
+@click.argument("repo")
+@click.option("--branch", default="main", show_default=True)
+@click.option("--kind", required=True,
+              type=click.Choice(["agent", "instruction", "skill", "hook"]),
+              help="Kind of item to install.")
+@click.option("--source", "source_path", required=True, metavar="PATH",
+              help="Relative path within the repo to the source file.")
+@click.pass_context
+def stack_install(
+    ctx: click.Context,
+    name: str,
+    repo: str,
+    branch: str,
+    kind: str,
+    source_path: str,
+) -> None:
+    """Install an item from a bucket repo into this project."""
+    reg, bm, _ = _stack_helpers(ctx)
+    # Ensure bucket is cached
+    bm.add(repo, branch=branch)
+    reg.install(name, repo=repo, branch=branch, kind=kind, source_path=source_path)
+    click.echo(f"Installed {name!r} ({kind}) from {repo}@{branch}:{source_path}")
+
+
+@stack.command("uninstall")
+@click.argument("name")
+@click.pass_context
+def stack_uninstall(ctx: click.Context, name: str) -> None:
+    """Remove an installed item from the registry."""
+    reg, _, _ = _stack_helpers(ctx)
+    removed = reg.uninstall(name)
+    if removed:
+        click.echo(f"Uninstalled: {name}")
+    else:
+        click.echo(f"Not found: {name}")
+
+
+@stack.command("list")
+@click.pass_context
+def stack_list(ctx: click.Context) -> None:
+    """List all installed stack items."""
+    reg, _, _ = _stack_helpers(ctx)
+    items = reg.list_items()
+    if not items:
+        click.echo("(no items installed)")
+        return
+    for item in items:
+        click.echo(
+            f"{item['name']}  kind={item['kind']}  "
+            f"repo={item['repo']}@{item['branch']}  "
+            f"source={item['source_path']}"
+        )
+
+
+# ── stack sync ────────────────────────────────────────────────────────────────
+
+@stack.command("sync")
+@click.option("--out", default=None, type=click.Path(), metavar="DIR",
+              help="Output directory (default: .github/agents/).")
+@click.option("--dry-run", is_flag=True, default=False,
+              help="Render but do not write files.")
+@click.pass_context
+def stack_sync(ctx: click.Context, out: str | None, dry_run: bool) -> None:
+    """Render all installed stack items and write to output directory."""
+    reg, bm, zhar_root = _stack_helpers(ctx)
+
+    output_dir = Path(out) if out else Path(".github") / "agents"
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    # Build template context from facts + memory
+    facts_path = zhar_root / "facts.json"
+    facts_data = Facts(facts_path).all() if facts_path.exists() else {}
+
+    store, _ = _open_store(ctx.obj["root"])
+    groups_data: dict = {
+        group_name: store.query(Query(group=group_name))
+        for group_name in store.groups
+    }
+
+    tpl_ctx = TemplateContext(facts=facts_data, groups=groups_data, chunk_resolver=None)
+
+    result = sync_stack(reg, bm, tpl_ctx, output_dir, dry_run=dry_run)
+
+    for name in result.synced:
+        action = "would write" if dry_run else "wrote"
+        click.echo(f"  {action}: {name}")
+    for err in result.errors:
+        click.echo(f"  ERROR: {err}", err=True)
+
+    click.echo(
+        f"\n{'(dry run) ' if dry_run else ''}synced={len(result.synced)} "
+        f"errors={len(result.errors)}"
+    )

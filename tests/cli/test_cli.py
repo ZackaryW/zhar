@@ -1,9 +1,12 @@
 """TDD: zhar CLI commands — init, add, note, show, query, status."""
+from types import SimpleNamespace
 from pathlib import Path
 import pytest
 from click.testing import CliRunner
 
 from zhar.cli import cli
+from zhar.mem.node import make_node
+from zhar.mem.store import MemStore
 
 
 @pytest.fixture
@@ -265,3 +268,37 @@ class TestStatus:
         result = runner.invoke(cli, ["--root", str(project), "status"])
         assert result.exit_code == 0
         assert "1" in result.output  # at least one count shows 1
+
+
+class TestExport:
+    def test_export_can_include_runtime_context(self, project, runner, monkeypatch):
+        from zhar.mem.groups import code_history as code_history_group
+
+        outputs = {
+            ("rev-parse", "--show-toplevel"): "D:/repo\n",
+            ("status", "--short", "--", "src/zhar/cli.py"): " M src/zhar/cli.py\n",
+            ("diff", "--stat", "--", "src/zhar/cli.py"): " src/zhar/cli.py | 6 ++++--\n 1 file changed, 4 insertions(+), 2 deletions(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/cli.py"): "abc1234 cli export\n",
+        }
+
+        def fake_run(args, cwd, capture_output, text, check):
+            return SimpleNamespace(returncode=0, stdout=outputs.get(tuple(args[1:]), ""))
+
+        monkeypatch.setattr(code_history_group.subprocess, "run", fake_run)
+
+        store = MemStore(project)
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+            source="src/zhar/cli.py::1::%ZHAR:ffff%",
+            metadata={"significance": "feature"},
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export", "--group", "code_history", "--with-runtime-context",
+        ])
+
+        assert result.exit_code == 0
+        assert "Runtime context" in result.output
+        assert "git_companion" in result.output

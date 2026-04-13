@@ -22,6 +22,7 @@ from typing import Any
 from zhar.mem.node import patch_node
 from zhar.mem.store import MemStore
 
+# %ZHAR:c67b%
 # Marker pattern: %ZHAR:<hex-id>%
 _MARKER_RE = re.compile(r"%ZHAR:([0-9a-f]+)%")
 

@@ -119,5 +119,26 @@
       "agent": "claude"
     },
     "custom": {}
+  },
+  "74c1": {
+    "id": "74c1",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "code_history must complement git diff, status, and commit history instead of duplicating them",
+    "status": "active",
+    "tags": [
+      "code-history",
+      "git"
+    ],
+    "source": "src/zhar/mem/groups/code_history.py::120::%ZHAR:74c1%",
+    "content": "## Why\n\nGit already owns raw diff, status, and commit-detail history. zhar should preserve durable semantic memory about why a change matters, while relying on git for live code movement and detailed patch history.\n\n## Requirement\n\n- code_history records should stay compact and semantic.\n- Source markers are the canonical code locator once present.\n- Exported agent context may gather git-derived runtime context to complement code_history, but should avoid embedding full duplicate diffs.\n- File moves should be followed through source markers and git history rather than redundant stored path copies.",
+    "created_at": "2026-04-13T23:13:34Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "high",
+      "agent": "copilot"
+    },
+    "custom": {}
   }
 }

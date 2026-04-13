@@ -138,3 +138,23 @@ class TestSyncSources:
         report = sync_sources(store, hits)
         assert report["updated"] == 2
         assert report["skipped"] == 1
+
+    def test_sync_sources_strips_redundant_file_change_path_metadata(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        node = make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="stack bucket manager",
+            metadata={
+                "path": "src/zhar/harness/stack/bucket.py",
+                "significance": "feature",
+            },
+        )
+        store.save(node)
+
+        hits = [MarkerHit(path=Path("src/zhar/harness/stack/bucket.py"), line=16, node_id=node.id)]
+        sync_sources(store, hits)
+
+        updated = store.get(node.id)
+        assert updated.source == f"src/zhar/harness/stack/bucket.py::16::%ZHAR:{node.id}%"
+        assert "path" not in updated.metadata

@@ -1,4 +1,5 @@
 """TDD: zhar.mem.export — context snapshot renderer."""
+from types import SimpleNamespace
 from pathlib import Path
 import pytest
 from zhar.mem.export import export_text, export_group
@@ -62,6 +63,61 @@ class TestExportGroup:
     def test_unknown_group_returns_empty_string(self, store):
         out = export_group(store, "nonexistent")
         assert out == ""
+
+    def test_hides_redundant_file_change_path_when_source_present(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="stack sync",
+            source="src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%",
+            metadata={
+                "path": "src/zhar/harness/stack/sync.py",
+                "significance": "feature",
+            },
+        ))
+
+        out = export_group(store, "code_history")
+
+        assert "source=src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%" in out
+        assert "path=src/zhar/harness/stack/sync.py" not in out
+
+    def test_can_include_runtime_context_for_code_history(self, tmp_path, monkeypatch):
+        from zhar.mem.groups import code_history as code_history_group
+
+        outputs = {
+            ("rev-parse", "--show-toplevel"): "D:/repo\n",
+            ("status", "--short", "--", "src/zhar/harness/stack/sync.py"): " M src/zhar/harness/stack/sync.py\n",
+            ("diff", "--stat", "--", "src/zhar/harness/stack/sync.py"): " src/zhar/harness/stack/sync.py | 4 +++-\n 1 file changed, 3 insertions(+), 1 deletion(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/harness/stack/sync.py"): "abc1234 stack sync cleanup\n",
+        }
+
+        def fake_run(args, cwd, capture_output, text, check):
+            return SimpleNamespace(returncode=0, stdout=outputs.get(tuple(args[1:]), ""))
+
+        monkeypatch.setattr(code_history_group.subprocess, "run", fake_run)
+
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="stack sync",
+            source="src/zhar/harness/stack/sync.py::14::%ZHAR:ffff%",
+            metadata={"significance": "feature"},
+        ))
+
+        out = export_group(
+            store,
+            "code_history",
+            include_runtime_context=True,
+            project_root=tmp_path,
+        )
+
+        assert "### Runtime context" in out
+        assert "#### git_companion" in out
+        assert "Working tree status:" in out
+        assert "Diff stat:" in out
+        assert "Recent commits:" in out
 
 
 # ── export_text ───────────────────────────────────────────────────────────────

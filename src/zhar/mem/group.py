@@ -14,7 +14,39 @@ from __future__ import annotations
 import dataclasses
 import typing
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Any, get_args, get_origin
+
+# %ZHAR:014f%
+
+@dataclass(frozen=True)
+class RuntimeContextRequest:
+    """Inputs provided to a group's runtime context provider.
+
+    Providers can inspect the active nodes in a group and gather companion
+    runtime data from external tools such as ``git`` or other subprocesses.
+    """
+
+    group_name: str
+    nodes: list[Any]
+    project_root: Path
+
+
+@dataclass(frozen=True)
+class RuntimeContextBlock:
+    """One runtime context block produced by a provider."""
+
+    title: str
+    content: str
+
+
+@dataclass(frozen=True)
+class RuntimeContextProvider:
+    """Descriptor for a group-level runtime context provider."""
+
+    name: str
+    description: str
+    gather: typing.Callable[[RuntimeContextRequest], str | None]
 
 
 @dataclass(frozen=True)
@@ -27,6 +59,7 @@ class NodeTypeDef:
     default_status: str = "active"
     singleton: bool = False
     auto_expires: bool = False
+    # %ZHAR:b61f%
     # True  → nodes of this type carry a content markdown body
     # False → graph-only / summary-only nodes (content is always None)
     memory_backed: bool = False
@@ -46,6 +79,7 @@ class GroupDef:
 
     name: str
     node_types: list[NodeTypeDef] = field(default_factory=list)
+    runtime_context_providers: list[RuntimeContextProvider] = field(default_factory=list)
 
     def __post_init__(self) -> None:
         names = [nt.name for nt in self.node_types]
@@ -84,6 +118,36 @@ class GroupDef:
 
     def default_status(self, type_name: str) -> str:
         return self.get_type(type_name).default_status
+
+    def gather_runtime_context(
+        self,
+        *,
+        nodes: list[Any],
+        project_root: Path,
+    ) -> list[RuntimeContextBlock]:
+        """Run configured runtime context providers for this group.
+
+        Provider failures are converted into explanatory blocks instead of
+        aborting the caller. Runtime context should complement stored memory,
+        not make export/install fail.
+        """
+        request = RuntimeContextRequest(
+            group_name=self.name,
+            nodes=nodes,
+            project_root=project_root,
+        )
+        blocks: list[RuntimeContextBlock] = []
+
+        for provider in self.runtime_context_providers:
+            try:
+                content = provider.gather(request)
+            except Exception as exc:
+                content = f"Provider '{provider.name}' failed: {exc}"
+            if not content:
+                continue
+            blocks.append(RuntimeContextBlock(title=provider.name, content=content))
+
+        return blocks
 
 
 # ── metadata validation ───────────────────────────────────────────────────────

@@ -1,4 +1,5 @@
 """TDD: zhar.harness.installer — agent file writer."""
+from types import SimpleNamespace
 from pathlib import Path
 import pytest
 from zhar.harness.installer import install_agent_file, uninstall_agent_file
@@ -76,6 +77,37 @@ class TestInstall:
     def test_returns_path(self, store, facts, out_path):
         result = install_agent_file(store, facts, out_path)
         assert result == out_path
+
+    def test_install_includes_runtime_context_when_available(self, tmp_path, facts, out_path, monkeypatch):
+        from zhar.mem.groups import code_history as code_history_group
+
+        outputs = {
+            ("rev-parse", "--show-toplevel"): "D:/repo\n",
+            ("status", "--short", "--", "src/zhar/harness/stack/template.py"): " M src/zhar/harness/stack/template.py\n",
+            ("diff", "--stat", "--", "src/zhar/harness/stack/template.py"): " src/zhar/harness/stack/template.py | 2 +-\n 1 file changed, 1 insertion(+), 1 deletion(-)\n",
+            ("log", "--oneline", "-n", "5", "--", "src/zhar/harness/stack/template.py"): "abc1234 template parser\n",
+        }
+
+        def fake_run(args, cwd, capture_output, text, check):
+            return SimpleNamespace(returncode=0, stdout=outputs.get(tuple(args[1:]), ""))
+
+        monkeypatch.setattr(code_history_group.subprocess, "run", fake_run)
+
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="template parser",
+            source="src/zhar/harness/stack/template.py::26::%ZHAR:ffff%",
+            metadata={"significance": "feature"},
+        ))
+
+        install_agent_file(store, facts, out_path)
+        content = out_path.read_text()
+
+        assert "Runtime context" in content
+        assert "git_companion" in content
+        assert "Diff stat:" in content
 
 
 # ── uninstall ─────────────────────────────────────────────────────────────────

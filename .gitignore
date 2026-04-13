@@ -180,3 +180,4 @@ cython_debug/
 .cursorignore
 .cursorindexingignore
 .zhar/**/__pycache__/
+pytest-cache-**/

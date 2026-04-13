@@ -21,6 +21,7 @@ import orjson
 
 
 class Facts:
+    # %ZHAR:b25f%
     """Persistent string key-value store backed by a single JSON file."""
 
     def __init__(self, path: Path) -> None:

@@ -19,16 +19,22 @@ Output format (plain text, agent-readable)::
 """
 from __future__ import annotations
 
+from pathlib import Path
+from typing import Any
+
 from zhar.mem.node import Node
 from zhar.mem.query import Query
 from zhar.mem.store import MemStore
 
 
 def export_group(
+    # %ZHAR:fdb3%
     store: MemStore,
     group: str,
     *,
     statuses: list[str] | None = None,
+    include_runtime_context: bool = False,
+    project_root: Path | None = None,
 ) -> str:
     """Render all nodes in *group* as a text block.
 
@@ -50,6 +56,20 @@ def export_group(
         if node.content:
             for content_line in node.content.splitlines():
                 lines.append(f"  {content_line}")
+
+    if include_runtime_context:
+        runtime_root = project_root if project_root is not None else store.project_root
+        blocks = store.groups[group].gather_runtime_context(
+            nodes=nodes,
+            project_root=runtime_root,
+        )
+        if blocks:
+            lines.append("")
+            lines.append("### Runtime context")
+            for block in blocks:
+                lines.append(f"#### {block.title}")
+                for content_line in block.content.splitlines():
+                    lines.append(content_line)
     return "\n".join(lines)
 
 
@@ -58,6 +78,8 @@ def export_text(
     *,
     groups: list[str] | None = None,
     statuses: list[str] | None = None,
+    include_runtime_context: bool = False,
+    project_root: Path | None = None,
 ) -> str:
     """Render a full memory snapshot as plain text.
 
@@ -68,7 +90,13 @@ def export_text(
     sections: list[str] = []
     total = 0
     for group in target_groups:
-        block = export_group(store, group, statuses=statuses)
+        block = export_group(
+            store,
+            group,
+            statuses=statuses,
+            include_runtime_context=include_runtime_context,
+            project_root=project_root,
+        )
         if block:
             sections.append(block)
             # Count nodes from first line "## group (N)"
@@ -93,6 +121,7 @@ def _sort_nodes(nodes: list[Node]) -> list[Node]:
 
 
 def _format_node_line(node: Node) -> str:
+    """Render one node as a compact single-line export entry."""
     parts: list[str] = [f"[{node.id}] {node.node_type} · {node.summary}"]
     if node.tags:
         parts.append(f"[tags: {', '.join(node.tags)}]")
@@ -101,6 +130,18 @@ def _format_node_line(node: Node) -> str:
     if node.source:
         parts.append(f"source={node.source}")
     if node.metadata:
-        for k, v in node.metadata.items():
+        for k, v in _visible_metadata(node):
             parts.append(f"{k}={v}")
     return " ".join(parts)
+
+
+def _visible_metadata(node: Node) -> list[tuple[str, Any]]:
+    """Return metadata items that should appear in text exports.
+
+    ``code_history/file_change`` treats ``source`` as authoritative once set,
+    so redundant legacy ``path`` metadata is hidden from agent-facing output.
+    """
+    items = list(node.metadata.items())
+    if node.group == "code_history" and node.node_type == "file_change" and node.source:
+        return [(key, value) for key, value in items if key != "path"]
+    return items

@@ -17,7 +17,7 @@ from zhar.mem.backends.json_backend import JsonBackend
 from zhar.mem.group import GroupDef
 from zhar.mem.index import MemIndex
 from zhar.mem.loader import load_all_groups
-from zhar.mem.node import Node
+from zhar.mem.node import Node, patch_node
 from zhar.mem.query import Query, QueryEngine
 
 
@@ -27,6 +27,7 @@ _CFG_SUBDIR = "cfg"
 
 
 class MemStore:
+    # %ZHAR:4f8b%
     """Unified memory store for all groups.
 
     Parameters
@@ -71,6 +72,7 @@ class MemStore:
         KeyError
             If *node.group* is not a known group.
         """
+        node = self._normalize_for_persistence(node)
         self._validate(node)
         backend = self._backend_for(node.group)
         backend.save(node)
@@ -117,6 +119,16 @@ class MemStore:
             result[name] = {"total": len(refs), "by_type": by_type}
         return result
 
+    @property
+    def root(self) -> Path:
+        """Return the ``.zhar`` root directory for this store."""
+        return self._root
+
+    @property
+    def project_root(self) -> Path:
+        """Return the project root that contains this store."""
+        return self._root.parent
+
     # ── internal ──────────────────────────────────────────────────────────────
 
     def _backend_for(self, group: str) -> JsonBackend:
@@ -126,6 +138,21 @@ class MemStore:
             raise KeyError(
                 f"Unknown group '{group}'. Known groups: {list(self.groups)}"
             )
+
+    def _normalize_for_persistence(self, node: Node) -> Node:
+        """Return *node* normalized to current storage semantics.
+
+        ``code_history/file_change`` uses ``source`` as the authoritative file
+        locator once a marker exists. In that state, ``metadata.path`` is stale
+        duplicate data and is removed before writing.
+        """
+        if node.group != "code_history" or node.node_type != "file_change":
+            return node
+        if node.source is None:
+            return node
+        if "path" not in node.metadata:
+            return node
+        return patch_node(node, metadata={"path": None})
 
     def _validate(self, node: Node) -> None:
         """Raise ValueError for constraint violations before writing."""

@@ -31,6 +31,7 @@ class GcReport:
 
 
 def run_gc(store: MemStore, *, dry_run: bool = False) -> GcReport:
+    # %ZHAR:b9b3%
     """Run garbage collection against *store*.
 
     Parameters

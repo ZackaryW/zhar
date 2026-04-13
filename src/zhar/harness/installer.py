@@ -31,6 +31,7 @@ repository.  It is generated from `.zhar/mem/` and `.zhar/facts.json`.
 
 
 def install_agent_file(
+    # %ZHAR:530d%
     store: MemStore,
     facts: Facts | None,
     output: Path,
@@ -63,7 +64,11 @@ def install_agent_file(
                 lines.append(f"- **{k}**: {v}")
             sections.append("\n".join(lines) + "\n")
 
-    snapshot = export_text(store)
+    snapshot = export_text(
+        store,
+        include_runtime_context=True,
+        project_root=store.project_root,
+    )
     sections.append("## Memory snapshot\n\n" + snapshot)
 
     output.write_text("\n\n".join(sections), encoding="utf-8")

@@ -101,5 +101,205 @@
       "tradeoffs": "immutability vs ergonomics"
     },
     "custom": {}
+  },
+  "5fa4": {
+    "id": "5fa4",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "facts is an independent KV store with no dependency on memory system — string-only values",
+    "status": "active",
+    "tags": [
+      "facts",
+      "design"
+    ],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T22:19:23Z",
+    "updated_at": "2026-04-13T22:19:23Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "f3a6": {
+    "id": "f3a6",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "zhar stack template grammar: %ZO%/%ZC%/%ZIF%/!!/??/[[ref]]/%ZM% — unambiguous open/close tokens",
+    "status": "active",
+    "tags": [
+      "stack",
+      "grammar"
+    ],
+    "source": "src/zhar/harness/stack/template.py::26::%ZHAR:f3a6%",
+    "content": null,
+    "created_at": "2026-04-13T22:19:23Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "19f1": {
+    "id": "19f1",
+    "group": "decision_trail",
+    "node_type": "research_finding",
+    "summary": "zmem.agent.md is the reference design: prescriptive procedures, command rules, node type reference, invariants",
+    "status": "active",
+    "tags": [
+      "agent-file"
+    ],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T22:19:23Z",
+    "updated_at": "2026-04-13T22:19:23Z",
+    "expires_at": null,
+    "metadata": {
+      "outcome": "adopted",
+      "source_ref": "docs/zmem/.github/agents/zmem.agent.md",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "21fd": {
+    "id": "21fd",
+    "group": "decision_trail",
+    "node_type": "adr",
+    "summary": "zhar stack uses zuu.GhCacheDir for bucket management — TTL-based clone/pull cache",
+    "status": "active",
+    "tags": [
+      "stack",
+      "zuu"
+    ],
+    "source": "src/zhar/harness/stack/bucket.py::16::%ZHAR:21fd%",
+    "content": "## Status\nproposed\n\n## Context\nzuu provides GhCacheDir: TTL-based GitHub repo cache handling clone-or-pull. Requires Python >=3.12, conflicts with zhar current >=3.10.\n\n## Decision\nRaise zhar minimum to 3.12, add zuu as dependency. GhCacheDir.ensure() handles full lifecycle.\n\n## Open\n- Confirm 3.12 min acceptable\n- Confirm sync always re-resolves via GhCacheDir TTL",
+    "created_at": "2026-04-13T22:19:23Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "5969": {
+    "id": "5969",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack template: %TEXT% block enables inline text in conditional branches (no file ref needed)",
+    "status": "active",
+    "tags": [],
+    "source": "src/zhar/harness/stack/template.py::27::%ZHAR:5969%",
+    "content": null,
+    "created_at": "2026-04-13T22:38:28Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {},
+    "custom": {}
+  },
+  "1782": {
+    "id": "1782",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack template: AND/OR/NOT compound conditions (capitalized, spaced); + shorthand for AND in branch refs",
+    "status": "active",
+    "tags": [],
+    "source": "src/zhar/harness/stack/template.py::26::%ZHAR:1782%",
+    "content": null,
+    "created_at": "2026-04-13T22:38:28Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {},
+    "custom": {}
+  },
+  "5dc4": {
+    "id": "5dc4",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack template: stacked %ZIF% = standard nesting; each %ZIF% opens scope, %ZC% closes innermost",
+    "status": "active",
+    "tags": [],
+    "source": "src/zhar/harness/stack/template.py::27::%ZHAR:5dc4%",
+    "content": null,
+    "created_at": "2026-04-13T22:38:28Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {},
+    "custom": {}
+  },
+  "fabe": {
+    "id": "fabe",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack CLI: zhar stack bucket add/list/remove, install, uninstall, list, sync subcommands wired in cli.py",
+    "status": "active",
+    "tags": [],
+    "source": "src/zhar/cli.py::556::%ZHAR:fabe%",
+    "content": null,
+    "created_at": "2026-04-13T22:49:08Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {},
+    "custom": {}
+  },
+  "2a6b": {
+    "id": "2a6b",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack sync uses TemplateContext built from Facts.all() + store.query per group; chunk_resolver reads from BucketManager cached repo dirs",
+    "status": "active",
+    "tags": [],
+    "source": "src/zhar/harness/stack/sync.py::14::%ZHAR:2a6b%",
+    "content": null,
+    "created_at": "2026-04-13T22:49:08Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {},
+    "custom": {}
+  },
+  "1a8f": {
+    "id": "1a8f",
+    "group": "decision_trail",
+    "node_type": "research_finding",
+    "summary": "Stack implementation validated end-to-end: 442 tests passing across template, bucket, registry, sync, and CLI flows",
+    "status": "active",
+    "tags": [
+      "stack",
+      "tests"
+    ],
+    "source": null,
+    "content": "## Result\n\nThe stack feature set is implemented end-to-end and currently verifies cleanly at 442/442 tests passing.\n\n## Coverage highlights\n\n- Template engine: 39 focused tests covering parsing, branching semantics, inline text, raw paste, eval, and compound conditions.\n- Bucket manager: 16 focused tests covering cache add, resolve, list, and remove behavior.\n- Registry: 17 focused tests covering install, uninstall, lookup, listing, and persistence in .zhar/cfg/stack.json.\n- Sync: 12 focused tests covering rendering, output naming, dry-run mode, and per-item error isolation.\n- CLI wiring is present for stack bucket add/list/remove, install, uninstall, list, and sync --dry-run.\n\n## Interpretation\n\nThis establishes the current stack implementation as functionally complete for the planned template, bucket, registry, sync, and CLI surfaces described in code_history and decision_trail.",
+    "created_at": "2026-04-13T23:01:32Z",
+    "updated_at": "2026-04-13T23:01:32Z",
+    "expires_at": null,
+    "metadata": {
+      "outcome": "adopted",
+      "source_ref": "tests/harness/stack",
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "014f": {
+    "id": "014f",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "GroupDef runtime_context_providers let each group gather external tool context (including subprocess-backed providers) during export/install",
+    "status": "active",
+    "tags": [
+      "runtime-context",
+      "tools",
+      "subprocess"
+    ],
+    "source": "src/zhar/mem/group.py::20::%ZHAR:014f%",
+    "content": null,
+    "created_at": "2026-04-13T23:13:35Z",
+    "updated_at": "2026-04-13T23:15:58Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "tradeoffs": "richer context vs slower export"
+    },
+    "custom": {}
   }
 }

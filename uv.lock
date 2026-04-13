@@ -1100,8 +1100,10 @@ source = { editable = "." }
 dependencies = [
     { name = "click" },
     { name = "orjson" },
+    { name = "packaging" },
     { name = "rapidfuzz" },
     { name = "tomli-w" },
+    { name = "zuu" },
 ]
 
 [package.optional-dependencies]
@@ -1124,10 +1126,12 @@ requires-dist = [
     { name = "click", specifier = ">=8.1" },
     { name = "mem0ai", marker = "extra == 'mem0'", specifier = ">=0.1" },
     { name = "orjson", specifier = ">=3.9" },
+    { name = "packaging", specifier = ">=24.0" },
     { name = "rapidfuzz", specifier = ">=3.0" },
     { name = "tomli", marker = "python_full_version < '3.11'", specifier = ">=2.0" },
     { name = "tomli-w", specifier = ">=1.0" },
     { name = "zep-python", marker = "extra == 'zep'", specifier = ">=2.0" },
+    { name = "zuu", specifier = ">=0.1" },
 ]
 provides-extras = ["vector", "mem0", "zep"]
 
@@ -1136,4 +1140,13 @@ dev = [
     { name = "pytest", specifier = ">=8.0" },
     { name = "pytest-cov", specifier = ">=5.0" },
     { name = "pytest-mock", specifier = ">=3.0" },
+]
+
+[[package]]
+name = "zuu"
+version = "202602.1.3"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/66/38/3d26a1876de2744f74e1f9ce452de83810f0381535078efcd771692310c2/zuu-202602.1.3.tar.gz", hash = "sha256:97140c610b398e09b63486ca60d450f5f4c61e8f1ba0b4d2b82505e11512d9fb", size = 10378, upload-time = "2026-04-05T02:26:24.551Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/5d/3dc2fb66a8588d0a6ec91a55b42a0e800e47d19e0aba80cea208f7e93598/zuu-202602.1.3-py3-none-any.whl", hash = "sha256:981a28565fbaeff1fa5c996c7e57b605233808972b983e8cb974c7bcca029e1d", size = 15514, upload-time = "2026-04-05T02:26:23.203Z" },
 ]

@@ -16,6 +16,7 @@ class _CachedEntry:
 
 @dataclass
 class MtimeFileCache:
+    # %ZHAR:b7e2%
     """Cache text *and* bytes file reads until the file mtime changes on disk.
 
     Uses ``stat().st_mtime`` (float seconds) as the cache key so that an

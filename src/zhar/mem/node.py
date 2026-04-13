@@ -35,6 +35,7 @@ class Node:
     updated_at: datetime
     expires_at: datetime | None
     source: str | None
+    # %ZHAR:c3b0%
     # Full markdown body for memory-backed node types (None for graph-only nodes)
     content: str | None
     # stored as tuples internally but exposed as dicts/lists via properties

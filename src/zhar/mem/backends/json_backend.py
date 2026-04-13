@@ -33,6 +33,7 @@ _FILE_CACHE = MtimeFileCache()
 
 
 class JsonBackend:
+    # %ZHAR:4e64%
     """Persist nodes for one group as an orjson-serialised JSON file."""
 
     def __init__(self, path: Path, *, cache: MtimeFileCache | None = None) -> None:

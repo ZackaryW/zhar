@@ -30,6 +30,7 @@ class VerifyIssue:
 
 
 def run_verify(
+    # %ZHAR:2b1c%
     store: MemStore,
     *,
     project_root: Path | None = None,

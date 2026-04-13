@@ -47,6 +47,9 @@ class TestBuiltinGroups:
                 f"{builtin_group.name}.{nt.name} missing 'agent' metadata field"
             )
 
+    def test_runtime_context_provider_list_present(self, builtin_group):
+        assert isinstance(builtin_group.runtime_context_providers, list)
+
 
 class TestProjectDna:
     def test_core_goal_is_singleton(self):
@@ -103,3 +106,8 @@ class TestCodeHistory:
         nt = GROUP.get_type("file_change")
         assert validate_node_metadata(nt, {"significance": "breaking"}) == []
         assert validate_node_metadata(nt, {"significance": "typo"})
+
+    def test_git_companion_provider_registered(self):
+        from zhar.mem.groups.code_history import GROUP
+        names = [provider.name for provider in GROUP.runtime_context_providers]
+        assert "git_companion" in names

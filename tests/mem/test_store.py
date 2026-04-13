@@ -93,6 +93,23 @@ class TestSaveGet:
         store.save(updated)
         assert store.get(goal_node.id).summary == "Updated goal"
 
+    def test_save_strips_redundant_file_change_path_when_source_present(self, store):
+        node = make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="stack template parser",
+            source="src/zhar/harness/stack/template.py::26::%ZHAR:ffff%",
+            metadata={
+                "path": "src/zhar/harness/stack/template.py",
+                "significance": "feature",
+            },
+        )
+
+        saved = store.save(node)
+
+        assert "path" not in saved.metadata
+        assert "path" not in store.get(node.id).metadata
+
 
 # ── delete ────────────────────────────────────────────────────────────────────
 
