@@ -1,8 +1,10 @@
-"""Facts — independent project-level key-value store.
+"""Facts — project and global string key-value stores for zhar.
 
-Persisted as ``.zhar/facts.json``.  All keys and values are strings.
-Facts have no dependency on the memory system; they are a standalone
-configuration primitive that other subsystems (harness, export) can read.
+Project facts are persisted as ``.zhar/facts.json`` inside a repository.
+Global facts are persisted as ``Path.home() / '.zhar' / 'facts.json'``.
+All keys and values are strings. Facts have no dependency on the memory
+system; they are a standalone configuration primitive that other subsystems
+(harness, export, stack templates) can read.
 
 Example ``facts.json``::
 
@@ -18,6 +20,35 @@ from __future__ import annotations
 from pathlib import Path
 
 import orjson
+
+
+def project_facts_path(zhar_root: Path) -> Path:
+    """Return the project-local facts file path for *zhar_root*."""
+    return zhar_root / "facts.json"
+
+
+def global_facts_path(home: Path | None = None) -> Path:
+    """Return the user-level global facts file path."""
+    base = home if home is not None else Path.home()
+    return base / ".zhar" / "facts.json"
+
+
+def load_facts(path: Path) -> dict[str, str]:
+    """Load facts from *path* when it exists, else return an empty mapping."""
+    return Facts(path).all() if path.exists() else {}
+
+
+def load_effective_facts(
+    project_path: Path | None = None,
+    global_path: Path | None = None,
+) -> dict[str, str]:
+    """Return merged global and project facts with project values winning."""
+    effective: dict[str, str] = {}
+    resolved_global_path = global_path if global_path is not None else global_facts_path()
+    effective.update(load_facts(resolved_global_path))
+    if project_path is not None:
+        effective.update(load_facts(project_path))
+    return effective
 
 
 class Facts:

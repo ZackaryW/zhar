@@ -56,10 +56,17 @@ class TestInstall:
         assert "python" in content
         assert "pytest" in content
 
+    def test_file_accepts_merged_fact_mapping(self, store, out_path):
+        install_agent_file(store, {"package_manager": "uv", "test_runner": "pytest"}, out_path)
+        content = out_path.read_text()
+        assert "package_manager" in content
+        assert "uv" in content
+
     def test_file_contains_zhar_header(self, store, facts, out_path):
         install_agent_file(store, facts, out_path)
         content = out_path.read_text()
         assert "zhar" in content.lower()
+        assert "uv run zhar install" in content
 
     def test_overwrites_existing_file(self, store, facts, out_path):
         out_path.parent.mkdir(parents=True, exist_ok=True)

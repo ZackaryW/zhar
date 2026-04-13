@@ -8,7 +8,7 @@ import click
 
 from zhar.cli.common import open_store
 from zhar.agents.installer import install_agent_file, uninstall_agent_file
-from zhar.utils.facts import Facts
+from zhar.utils.facts import load_effective_facts, project_facts_path
 
 
 @click.command(name="install")
@@ -17,8 +17,7 @@ from zhar.utils.facts import Facts
 def install_command(ctx: click.Context, out: str | None) -> None:
     """Write the agent instruction file from memory and facts."""
     store, zhar_root = open_store(ctx.obj["root"])
-    facts_path = zhar_root / "facts.json"
-    facts = Facts(facts_path) if facts_path.exists() else None
+    facts = load_effective_facts(project_facts_path(zhar_root))
     output = Path(out) if out else Path(".github") / "agents" / "zhar.agent.md"
     install_agent_file(store, facts, output)
     click.echo(f"Written: {output}  ({output.stat().st_size} bytes)")

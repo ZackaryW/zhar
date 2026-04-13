@@ -12,7 +12,7 @@ from zhar.stack.bucket import BucketManager
 from zhar.stack.registry import StackRegistry
 from zhar.stack.sync import sync_stack
 from zhar.stack.template import TemplateContext
-from zhar.utils.facts import Facts
+from zhar.utils.facts import load_effective_facts, project_facts_path
 
 
 # %ZHAR:7e64% %ZHAR:fabe%
@@ -132,8 +132,7 @@ def stack_sync_command(ctx: click.Context, out: str | None, dry_run: bool) -> No
     output_dir = Path(out) if out else Path(".github") / "agents"
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    facts_path = zhar_root / "facts.json"
-    facts_data = Facts(facts_path).all() if facts_path.exists() else {}
+    facts_data = load_effective_facts(project_facts_path(zhar_root))
     store, _ = open_store(ctx.obj["root"])
     groups_data = {
         group_name: store.query(Query(groups=[group_name]))

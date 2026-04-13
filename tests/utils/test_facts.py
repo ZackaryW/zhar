@@ -1,7 +1,7 @@
 """TDD: zhar.utils.facts — independent key-value store."""
 from pathlib import Path
 import pytest
-from zhar.utils.facts import Facts
+from zhar.utils.facts import Facts, global_facts_path, load_effective_facts, project_facts_path
 
 
 @pytest.fixture
@@ -28,6 +28,14 @@ class TestLoad:
 
     def test_path_stored(self, facts, facts_path):
         assert facts.path == facts_path
+
+
+class TestPaths:
+    def test_project_facts_path(self, tmp_path):
+        assert project_facts_path(tmp_path / ".zhar") == tmp_path / ".zhar" / "facts.json"
+
+    def test_global_facts_path(self, tmp_path):
+        assert global_facts_path(tmp_path) == tmp_path / ".zhar" / "facts.json"
 
 
 # ── get / set / unset ─────────────────────────────────────────────────────────
@@ -86,6 +94,17 @@ class TestPersistence:
         facts.set("k", "v")
         data = orjson.loads(facts_path.read_bytes())
         assert data["k"] == "v"
+
+    def test_effective_facts_merge_global_then_project(self, tmp_path):
+        global_path = tmp_path / "home" / ".zhar" / "facts.json"
+        project_path = tmp_path / "repo" / ".zhar" / "facts.json"
+        Facts(global_path).set("runner", "pytest")
+        Facts(global_path).set("package_manager", "uv")
+        Facts(project_path).set("runner", "nox")
+
+        effective = load_effective_facts(project_path, global_path)
+
+        assert effective == {"package_manager": "uv", "runner": "nox"}
 
 
 # ── values are always strings ─────────────────────────────────────────────────

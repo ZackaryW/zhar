@@ -71,7 +71,7 @@ def _check_missing_singletons(store: MemStore) -> list[VerifyIssue]:
                     code="MISSING_SINGLETON",
                     message=(
                         f"Group '{group_name}': no active '{type_def.name}' node. "
-                        f"Add one with: zhar add {group_name} {type_def.name} \"...\""
+                        f"Add one with: uv run zhar add {group_name} {type_def.name} \"...\""
                     ),
                 ))
     return issues
@@ -94,7 +94,7 @@ def _check_missing_content(store: MemStore) -> list[VerifyIssue]:
                 message=(
                     f"Node [{node.id}] '{node.summary}' ({node.group}/{node.node_type}) "
                     f"is memory-backed but has no content body. "
-                    f"Add it with: zhar note {node.id} \"...\""
+                    f"Add it with: uv run zhar note {node.id} \"...\""
                 ),
             ))
     return issues

@@ -270,6 +270,102 @@ class TestStatus:
         assert "1" in result.output  # at least one count shows 1
 
 
+class TestFacts:
+    def test_facts_set_and_get_project_scope(self, project, runner):
+        set_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "runner", "pytest",
+        ])
+        get_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "get", "runner",
+        ])
+
+        assert set_result.exit_code == 0, set_result.output
+        assert get_result.exit_code == 0, get_result.output
+        assert get_result.output.strip() == "pytest"
+
+    def test_facts_set_global_scope(self, project, runner, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        home.mkdir()
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("HOME", str(home))
+
+        set_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "--scope", "global", "package_manager", "uv",
+        ])
+        list_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "list", "--scope", "global",
+        ])
+
+        assert set_result.exit_code == 0, set_result.output
+        assert list_result.exit_code == 0, list_result.output
+        assert "package_manager = uv" in list_result.output
+
+    def test_facts_get_effective_scope_prefers_project(self, project, runner, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        home.mkdir()
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("HOME", str(home))
+
+        global_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "--scope", "global", "runner", "pytest",
+        ])
+        project_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "runner", "nox",
+        ])
+        get_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "get", "runner",
+        ])
+
+        assert global_result.exit_code == 0, global_result.output
+        assert project_result.exit_code == 0, project_result.output
+        assert get_result.exit_code == 0, get_result.output
+        assert get_result.output.strip() == "nox"
+
+    def test_facts_unset_global_scope(self, project, runner, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        home.mkdir()
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("HOME", str(home))
+
+        runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "--scope", "global", "repo", "zhar",
+        ])
+        unset_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "unset", "--scope", "global", "repo",
+        ])
+        get_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "get", "--scope", "global", "repo",
+        ])
+
+        assert unset_result.exit_code == 0, unset_result.output
+        assert get_result.exit_code != 0
+
+
+class TestInstallCommand:
+    def test_install_includes_effective_global_and_project_facts(self, project, runner, tmp_path, monkeypatch):
+        home = tmp_path / "home"
+        home.mkdir()
+        monkeypatch.setenv("USERPROFILE", str(home))
+        monkeypatch.setenv("HOME", str(home))
+
+        runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "--scope", "global", "package_manager", "uv",
+        ])
+        runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "primary_language", "python",
+        ])
+
+        output = project / "zhar.agent.md"
+        result = runner.invoke(cli, [
+            "--root", str(project), "install", "--out", str(output),
+        ])
+
+        assert result.exit_code == 0, result.output
+        content = output.read_text(encoding="utf-8")
+        assert "package_manager" in content
+        assert "primary_language" in content
+
+
 class TestExport:
     def test_export_can_include_runtime_context(self, project, runner, monkeypatch):
         from zhar.mem.groups import code_history as code_history_group
