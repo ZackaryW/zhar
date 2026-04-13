@@ -1,0 +1,43 @@
+[project]
+name = "zhar"
+version = "0.1.0"
+description = "Agent memory harness — group-based, pluggable backends, facts-driven"
+readme = "README.md"
+authors = [
+    { name = "ZackaryW", email = "36378555+ZackaryW@users.noreply.github.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "click>=8.1",
+    "orjson>=3.9",
+    "rapidfuzz>=3.0",
+    "tomli>=2.0 ; python_version < '3.11'",
+    "tomli-w>=1.0",
+]
+
+[project.optional-dependencies]
+vector = []          # placeholder for future sqlite-vec
+mem0 = ["mem0ai>=0.1"]
+zep = ["zep-python>=2.0"]
+
+[project.scripts]
+zhar = "zhar.cli:cli"
+
+[build-system]
+requires = ["uv_build>=0.10.9,<0.11.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "pytest-mock>=3.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--tb=short"
+
+[tool.coverage.run]
+source = ["src"]
+omit = ["tests/*"]

@@ -1,0 +1,105 @@
+{
+  "c4b6": {
+    "id": "c4b6",
+    "group": "decision_trail",
+    "node_type": "adr",
+    "summary": "Use group-clustered JSON files instead of a flat zmem-style graph",
+    "status": "active",
+    "tags": [
+      "architecture",
+      "storage"
+    ],
+    "source": null,
+    "content": "## Status\naccepted\n\n## Context\nzmem stored all nodes in a single graph.json which caused:\n- Slow YAML processing (confirmed by user)\n- Monolithic structure hard to extend\n- No per-group backend flexibility\n\n## Decision\nBreak memory into 4 default groups (project_dna, problem_tracking, decision_trail, code_history), each with its own JSON file and optionally its own backend provider.\n\n## Consequences\n+ Groups can independently use json/sqlite/vector backends\n+ Clear semantic boundaries reduce cross-group noise\n- Queries across groups require a fan-out step via MemStore",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-13T16:39:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "7dd1": {
+    "id": "7dd1",
+    "group": "decision_trail",
+    "node_type": "adr",
+    "summary": "orjson as hard dependency, MtimeFileCache per JsonBackend",
+    "status": "active",
+    "tags": [
+      "performance",
+      "json"
+    ],
+    "source": null,
+    "content": "## Status\naccepted\n\n## Context\nzmem used YAML which the user found notably slow in practice. orjson is 3-6x faster than stdlib json for typical payloads.\n\n## Decision\norjson is a required dependency (not optional). All JSON reads go through MtimeFileCache (keyed by st_mtime float) to avoid redundant disk reads during scan/export within a single process lifetime.\n\n## Consequences\n+ Much faster repeated reads in scan/export flows\n+ Cache invalidation is automatic on mtime change or explicit via invalidate()\n- orjson requires a C extension; pure-Python fallback removed",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-13T16:39:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "1156": {
+    "id": "1156",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "validate_node_metadata uses dataclass field introspection to check Literal and basic types",
+    "status": "active",
+    "tags": [
+      "validation",
+      "metadata"
+    ],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-13T16:39:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "992f": {
+    "id": "992f",
+    "group": "decision_trail",
+    "node_type": "research_finding",
+    "summary": "zmem cli.py (587 lines), core/cache.py (MtimeFileCache), utils/ids.py ported as useful references",
+    "status": "active",
+    "tags": [
+      "zmem",
+      "porting"
+    ],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-13T16:39:48Z",
+    "expires_at": null,
+    "metadata": {
+      "outcome": "adopted",
+      "source_ref": "docs/zmem",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "f0ee": {
+    "id": "f0ee",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Node dataclass is frozen with private _tags/_metadata/_custom tuples exposed as public list/dict properties",
+    "status": "active",
+    "tags": [
+      "design",
+      "node"
+    ],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T16:39:54Z",
+    "updated_at": "2026-04-13T16:39:54Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude",
+      "tradeoffs": "immutability vs ergonomics"
+    },
+    "custom": {}
+  }
+}
