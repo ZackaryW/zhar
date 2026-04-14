@@ -346,5 +346,62 @@
       "agent": "copilot"
     },
     "custom": {}
+  },
+  "1175f": {
+    "id": "1175f",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/migration/zmem.py — import zmem graph.json into zhar and preserve extra detail as attached notes",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T00:24:55Z",
+    "updated_at": "2026-04-14T00:24:55Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/migration/zmem.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "129f7": {
+    "id": "129f7",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/cli/memory.py — add add-note command for attached supplemental notes",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T00:27:36Z",
+    "updated_at": "2026-04-14T00:27:36Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/cli/memory.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "14f27": {
+    "id": "14f27",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/mem/export.py and group definitions — add current-boundary filtering for default export",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T00:30:01Z",
+    "updated_at": "2026-04-14T00:30:01Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/mem/export.py",
+      "significance": "feature"
+    },
+    "custom": {}
   }
 }

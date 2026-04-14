@@ -45,6 +45,7 @@ GROUP = GroupDef(
             meta_cls=CoreGoalMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             singleton=True,
         ),
         NodeTypeDef(
@@ -52,6 +53,7 @@ GROUP = GroupDef(
             meta_cls=CoreRequirementMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -59,6 +61,7 @@ GROUP = GroupDef(
             meta_cls=ProductContextMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -66,6 +69,7 @@ GROUP = GroupDef(
             meta_cls=StakeholderMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
         ),
     ],
 )

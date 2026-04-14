@@ -36,8 +36,8 @@ class TestMakeNode:
     def test_returns_node_instance(self, minimal_node):
         assert isinstance(minimal_node, Node)
 
-    def test_id_is_four_char_hex(self, minimal_node):
-        assert len(minimal_node.id) == 4
+    def test_id_is_supported_hex_length(self, minimal_node):
+        assert len(minimal_node.id) in {4, 5}
         assert all(c in "0123456789abcdef" for c in minimal_node.id)
 
     def test_group_and_type_set(self, full_node):

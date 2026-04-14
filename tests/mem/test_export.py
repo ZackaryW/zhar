@@ -15,7 +15,7 @@ def store(tmp_path) -> MemStore:
     s.save(make_node(group="project_dna", node_type="core_requirement",
                      summary="Use orjson", metadata={"priority": "high"}))
     s.save(make_node(group="decision_trail", node_type="adr",
-                     summary="Group-clustered storage", tags=["arch"],
+                     summary="Group-clustered storage", status="accepted", tags=["arch"],
                      content="## Status\naccepted"))
     s.save(make_node(group="problem_tracking", node_type="known_issue",
                      summary="OOM on scan", metadata={"severity": "low"}))
@@ -40,9 +40,9 @@ class TestExportGroup:
 
     def test_contains_node_ids(self, store):
         out = export_group(store, "project_dna")
-        # IDs are 4-char hex; just check the format is present
+        # IDs are supported as legacy 4-char or new 5-char hex; just check the format is present
         import re
-        assert re.search(r"\[[0-9a-f]{4}\]", out)
+        assert re.search(r"\[[0-9a-f]{4,5}\]", out)
 
     def test_includes_tags_when_present(self, store):
         out = export_group(store, "decision_trail")
@@ -63,6 +63,50 @@ class TestExportGroup:
     def test_unknown_group_returns_empty_string(self, store):
         out = export_group(store, "nonexistent")
         assert out == ""
+
+    def test_default_export_uses_current_boundary_for_group(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="decision_trail",
+            node_type="adr",
+            summary="Accepted ADR",
+            status="accepted",
+            content="## Status\naccepted",
+        ))
+        store.save(make_node(
+            group="decision_trail",
+            node_type="adr",
+            summary="Proposed ADR",
+            status="proposed",
+            content="## Status\nproposed",
+        ))
+
+        out = export_group(store, "decision_trail")
+
+        assert "Accepted ADR" in out
+        assert "Proposed ADR" not in out
+
+    def test_explicit_status_filter_overrides_current_boundary(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="decision_trail",
+            node_type="adr",
+            summary="Accepted ADR",
+            status="accepted",
+            content="## Status\naccepted",
+        ))
+        store.save(make_node(
+            group="decision_trail",
+            node_type="adr",
+            summary="Proposed ADR",
+            status="proposed",
+            content="## Status\nproposed",
+        ))
+
+        out = export_group(store, "decision_trail", statuses=["proposed"])
+
+        assert "Accepted ADR" not in out
+        assert "Proposed ADR" in out
 
     def test_hides_redundant_file_change_path_when_source_present(self, tmp_path):
         store = MemStore(tmp_path / ".zhar")
@@ -162,3 +206,39 @@ class TestExportText:
         # Should mention total or per-group counts somewhere
         import re
         assert re.search(r"\d+", out)
+
+    def test_default_export_excludes_non_current_statuses_across_groups(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="problem_tracking",
+            node_type="known_issue",
+            summary="Active issue",
+            status="active",
+            content="## Details\nactive",
+        ))
+        store.save(make_node(
+            group="problem_tracking",
+            node_type="known_issue",
+            summary="Resolved issue",
+            status="resolved",
+            content="## Details\nresolved",
+        ))
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="Fresh file change",
+            status="active",
+        ))
+        store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="Stale file change",
+            status="stale",
+        ))
+
+        out = export_text(store)
+
+        assert "Active issue" in out
+        assert "Resolved issue" not in out
+        assert "Fresh file change" in out
+        assert "Stale file change" not in out

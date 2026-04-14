@@ -32,6 +32,7 @@ _BUILTIN_MODULE_PATHS = [
     "zhar.mem.groups.problem_tracking",
     "zhar.mem.groups.decision_trail",
     "zhar.mem.groups.code_history",
+    "zhar.mem.groups.notes",
 ]
 
 

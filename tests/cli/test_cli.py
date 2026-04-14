@@ -52,6 +52,7 @@ class TestHelp:
         assert "Agent Commands:" in result.output
         assert "Stack Commands:" in result.output
         assert "  add     " in result.output
+        assert "  add-note" in result.output
         assert "  facts  " in result.output
         assert "  install    " in result.output
         assert "  stack  " in result.output
@@ -66,9 +67,9 @@ class TestAdd:
             "project_dna", "core_requirement", "Support pluggable backends",
         ])
         assert result.exit_code == 0, result.output
-        # output should contain the new node ID (4 hex chars)
+        # output should contain the new node ID
         import re
-        assert re.search(r"Added [0-9a-f]{4}", result.output)
+        assert re.search(r"Added [0-9a-f]{4,5}", result.output)
 
     def test_add_with_meta_fields(self, project, runner):
         result = runner.invoke(cli, [
@@ -159,7 +160,7 @@ class TestNote:
         ])
         assert result.exit_code == 0, result.output
         import re
-        return re.search(r"Added ([0-9a-f]{4})", result.output).group(1)
+        return re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
 
     def test_note_sets_content(self, project, runner):
         nid = self._add_adr(project, runner)
@@ -174,7 +175,7 @@ class TestNote:
             "project_dna", "core_goal", "A goal",
         ])
         import re
-        nid = re.search(r"Added ([0-9a-f]{4})", result.output).group(1)
+        nid = re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
         result2 = runner.invoke(cli, [
             "--root", str(project), "note", nid, "Some content",
         ])
@@ -187,6 +188,72 @@ class TestNote:
         assert result.exit_code != 0
 
 
+class TestAddNote:
+    def _add_requirement(self, project, runner, summary: str = "Must support TDD") -> str:
+        """Helper: add a requirement and return its node ID."""
+        result = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", summary,
+            "--content", "## Why\n\nBecause.",
+        ])
+        assert result.exit_code == 0, result.output
+        import re
+        return re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
+
+    def test_add_note_creates_attached_note(self, project, runner):
+        target_id = self._add_requirement(project, runner)
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "add-note", target_id, "Extra implementation context.",
+        ])
+
+        assert result.exit_code == 0, result.output
+        store = MemStore(project)
+        notes = store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["notes"]))
+        assert len(notes) == 1
+        assert notes[0].metadata["target_ids"] == target_id
+        assert notes[0].content == "Extra implementation context."
+
+    def test_add_note_supports_multiple_targets(self, project, runner):
+        first_id = self._add_requirement(project, runner, "First target")
+        second_id = self._add_requirement(project, runner, "Second target")
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "add-note", first_id, "Shared note.", "--target", second_id,
+        ])
+
+        assert result.exit_code == 0, result.output
+        store = MemStore(project)
+        notes = store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["notes"]))
+        assert len(notes) == 1
+        assert notes[0].metadata["target_ids"] == f"{first_id},{second_id}"
+
+    def test_add_note_rejects_unknown_target(self, project, runner):
+        result = runner.invoke(cli, [
+            "--root", str(project), "add-note", "zzzz", "Extra implementation context.",
+        ])
+
+        assert result.exit_code != 0
+        assert "not found" in result.output.lower() or "does not exist" in result.output.lower()
+
+    def test_add_note_rejects_note_target(self, project, runner):
+        target_id = self._add_requirement(project, runner)
+        create_result = runner.invoke(cli, [
+            "--root", str(project), "add-note", target_id, "First note.",
+        ])
+        assert create_result.exit_code == 0, create_result.output
+
+        store = MemStore(project)
+        note_id = store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["notes"]))[0].id
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "add-note", note_id, "Nested note.",
+        ])
+
+        assert result.exit_code != 0
+        assert "cannot target other note nodes" in result.output.lower()
+
+
 # ── show ──────────────────────────────────────────────────────────────────────
 
 class TestShow:
@@ -196,7 +263,7 @@ class TestShow:
             "project_dna", "core_requirement", "Must support TDD",
         ])
         import re
-        nid = re.search(r"Added ([0-9a-f]{4})", add.output).group(1)
+        nid = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
         result = runner.invoke(cli, ["--root", str(project), "show", nid])
         assert result.exit_code == 0, result.output
         assert "Must support TDD" in result.output
@@ -207,7 +274,7 @@ class TestShow:
             "project_dna", "core_requirement", "A requirement",
         ])
         import re
-        nid = re.search(r"Added ([0-9a-f]{4})", add.output).group(1)
+        nid = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
         result = runner.invoke(cli, ["--root", str(project), "show", nid])
         assert "project_dna" in result.output
         assert "core_requirement" in result.output
@@ -413,3 +480,79 @@ class TestExport:
         assert result.exit_code == 0
         assert "Runtime context" in result.output
         assert "git_companion" in result.output
+
+    def test_export_omits_notes_by_default(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Base requirement",
+            content="## Why\n\nBecause.",
+        )
+        store.save(base)
+        store.save(make_node(
+            group="notes",
+            node_type="note",
+            summary="Imported note",
+            content="Supplemental detail.",
+            metadata={"target_ids": base.id, "agent": "copilot"},
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Base requirement" in result.output
+        assert "Imported note" not in result.output
+
+
+class TestQueryNotes:
+    def test_query_note_depth_zero_hides_attached_notes(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Choose cached importer",
+        )
+        store.save(base)
+        store.save(make_node(
+            group="notes",
+            node_type="note",
+            summary="Migration rationale",
+            content="Extra detail for import behavior.",
+            metadata={"target_ids": base.id, "agent": "copilot"},
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "query", "--q", "cached importer",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Choose cached importer" in result.output
+        assert "Migration rationale" not in result.output
+
+    def test_query_note_depth_one_shows_attached_notes_under_match(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Choose cached importer",
+        )
+        store.save(base)
+        store.save(make_node(
+            group="notes",
+            node_type="note",
+            summary="Migration rationale",
+            content="Extra detail for import behavior.",
+            metadata={"target_ids": base.id, "agent": "copilot"},
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "query", "--q", "cached importer", "--note-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Choose cached importer" in result.output
+        assert "Migration rationale" in result.output
+        assert "Extra detail for import behavior." in result.output

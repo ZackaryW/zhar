@@ -33,6 +33,7 @@ GROUP = GroupDef(
             meta_cls=KnownIssueMeta,
             valid_statuses=["active", "resolved", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -40,6 +41,7 @@ GROUP = GroupDef(
             meta_cls=BlockedMeta,
             valid_statuses=["active", "resolved"],
             default_status="active",
+            current_statuses=["active"],
         ),
     ],
 )

@@ -7,8 +7,8 @@ class TestNewId:
     def test_returns_string(self):
         assert isinstance(new_id(), str)
 
-    def test_default_length_is_four(self):
-        assert len(new_id()) == 4
+    def test_default_length_is_five(self):
+        assert len(new_id()) == 5
 
     def test_custom_length(self):
         assert len(new_id(length=8)) == 8
@@ -24,6 +24,9 @@ class TestNewId:
 
 
 class TestIsValidId:
+    def test_valid_five_char_hex(self):
+        assert is_valid_id("0a3f9") is True
+
     def test_valid_four_char_hex(self):
         assert is_valid_id("a3f9") is True
 
@@ -67,3 +70,8 @@ class TestMakeIdUnique:
         taken = {"a3f9"}
         result = make_id_unique("a3f9", taken, length=4)
         assert len(result) == 4
+
+    def test_generates_five_char_ids_by_default_when_taken(self):
+        taken = {"0a3f9"}
+        result = make_id_unique("0a3f9", taken)
+        assert len(result) == 5

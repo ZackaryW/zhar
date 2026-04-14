@@ -168,18 +168,21 @@ GROUP = GroupDef(
             meta_cls=FileChangeMeta,
             valid_statuses=["active", "stale", "archived"],
             default_status="active",
+            current_statuses=["active"],
         ),
         NodeTypeDef(
             name="function_change",
             meta_cls=FunctionChangeMeta,
             valid_statuses=["active", "stale", "archived"],
             default_status="active",
+            current_statuses=["active"],
         ),
         NodeTypeDef(
             name="breaking_change",
             meta_cls=BreakingChangeMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -187,6 +190,7 @@ GROUP = GroupDef(
             meta_cls=RevertNoteMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
         ),
     ],
 )

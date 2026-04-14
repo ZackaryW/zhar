@@ -8,6 +8,7 @@ from zhar.mem.group import GroupDef, validate_node_metadata
     "zhar.mem.groups.problem_tracking",
     "zhar.mem.groups.decision_trail",
     "zhar.mem.groups.code_history",
+    "zhar.mem.groups.notes",
 ])
 def builtin_group(request):
     import importlib
@@ -111,3 +112,15 @@ class TestCodeHistory:
         from zhar.mem.groups.code_history import GROUP
         names = [provider.name for provider in GROUP.runtime_context_providers]
         assert "git_companion" in names
+
+
+class TestNotes:
+    def test_has_expected_types(self):
+        from zhar.mem.groups.notes import GROUP
+        assert {"note"} == set(GROUP.type_names)
+
+    def test_target_ids_required_as_string_metadata(self):
+        from zhar.mem.groups.notes import GROUP
+        nt = GROUP.get_type("note")
+        assert validate_node_metadata(nt, {"target_ids": "ab12,cd34"}) == []
+        assert validate_node_metadata(nt, {"target_ids": 123})

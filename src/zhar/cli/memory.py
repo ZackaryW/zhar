@@ -8,7 +8,7 @@ from pathlib import Path
 
 import click
 
-from zhar.cli.common import format_node, open_store, parse_meta
+from zhar.cli.common import format_node, open_store, parse_meta, parse_target_ids
 from zhar.mem.export import export_text
 from zhar.mem.gc import run_gc
 from zhar.mem.group import validate_node_metadata
@@ -16,6 +16,7 @@ from zhar.mem.node import make_node, patch_node
 from zhar.mem.query import Query
 from zhar.mem.scan import scan_tree, sync_sources
 from zhar.mem.verify import Severity, run_verify
+from zhar.migration.zmem import migrate_zmem_json
 from zhar.utils.fs import ensure_gitignore_entry
 
 
@@ -84,6 +85,7 @@ def add_command(
         source=source,
         content=body,
         metadata=metadata,
+        node_id=store.allocate_id(),
     )
 
     try:
@@ -93,6 +95,54 @@ def add_command(
         sys.exit(1)
 
     click.echo(f"Added {node.id}  [{group}/{node_type}]  {summary!r}")
+
+
+@click.command(name="add-note")
+@click.argument("target_id")
+@click.argument("content")
+@click.option("--target", "extra_targets", multiple=True, metavar="NODE_ID", help="Additional node to attach this note to (repeatable).")
+@click.pass_context
+def add_note_command(
+    ctx: click.Context,
+    target_id: str,
+    content: str,
+    extra_targets: tuple[str, ...],
+) -> None:
+    """Create a supplemental note attached to one or more existing nodes."""
+    body = click.get_text_stream("stdin").read() if content == "-" else content
+    store, _ = open_store(ctx.obj["root"])
+
+    target_ids = [target_id, *extra_targets]
+    unique_targets: list[str] = []
+    for candidate in target_ids:
+        if candidate not in unique_targets:
+            unique_targets.append(candidate)
+
+    for candidate in unique_targets:
+        node = store.get(candidate)
+        if node is None:
+            click.echo(f"Error: node '{candidate}' not found.", err=True)
+            sys.exit(1)
+        if node.group == "notes":
+            click.echo("Error: note nodes cannot target other note nodes.", err=True)
+            sys.exit(1)
+
+    note = make_node(
+        group="notes",
+        node_type="note",
+        summary=(body.splitlines()[0].strip() if body.strip() else f"Attached note for {target_id}"),
+        content=body,
+        metadata={"agent": "copilot", "target_ids": ",".join(unique_targets)},
+        node_id=store.allocate_id(),
+    )
+
+    try:
+        store.save(note)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    click.echo(f"Added {note.id}  [notes/note]  targets={','.join(unique_targets)!r}")
 
 
 @click.command(name="note")
@@ -140,6 +190,7 @@ def show_command(ctx: click.Context, node_id: str) -> None:
 @click.option("--status", multiple=True, metavar="STATUS", help="Filter by status (repeatable).")
 @click.option("--tag", "tag", multiple=True, metavar="TAG", help="Node must have all listed tags (repeatable).")
 @click.option("--q", "text", default=None, metavar="TEXT", help="Fuzzy summary search.")
+@click.option("--note-depth", default=0, type=int, metavar="N", help="Show attached notes under each matched node up to depth N (default: 0).")
 @click.option("--limit", default=None, type=int, metavar="N", help="Max results.")
 @click.pass_context
 def query_command(
@@ -149,14 +200,20 @@ def query_command(
     status: tuple[str, ...],
     tag: tuple[str, ...],
     text: str | None,
+    note_depth: int,
     limit: int | None,
 ) -> None:
     """Search and filter memory nodes."""
     store, _ = open_store(ctx.obj["root"])
+    selected_groups = list(group) or None
+    selected_types = list(node_type) or None
+    if selected_groups is None and selected_types is None:
+        selected_groups = [name for name in store.groups if name != "notes"]
+
     nodes = store.query(
         Query(
-            groups=list(group) or None,
-            node_types=list(node_type) or None,
+            groups=selected_groups,
+            node_types=selected_types,
             statuses=list(status) or None,
             tags=list(tag) or None,
             summary_contains=text,
@@ -176,6 +233,12 @@ def query_command(
             f"{node.id}  {node.group}/{node.node_type}  {node.status}  "
             f"{node.summary!r}{tag_str}{meta_str}"
         )
+        if note_depth > 0 and node.group != "notes":
+            for note in store.attached_notes(node.id):
+                click.echo(f"  note {note.id}  {note.summary!r}")
+                if note.content:
+                    for line in note.content.splitlines():
+                        click.echo(f"    {line}")
 
 
 @click.command(name="status")
@@ -277,10 +340,24 @@ def verify_command(ctx: click.Context, project_root: str) -> None:
         sys.exit(1)
 
 
+@click.command(name="migrate")
+@click.argument("source_path", type=click.Path(exists=True, path_type=Path))
+@click.pass_context
+def migrate_command(ctx: click.Context, source_path: Path) -> None:
+    """Migrate a zmem graph.json surface into the current zhar store."""
+    store, _ = open_store(ctx.obj["root"])
+    report = migrate_zmem_json(store, source_path)
+    click.echo(
+        f"Migrated {report.migrated_nodes} node(s), created {report.created_notes} note(s), "
+        f"reused {report.preserved_ids} legacy id(s)."
+    )
+
+
 def register_memory_commands(cli_group: click.Group) -> None:
     """Register the core memory CLI commands on *cli_group*."""
     cli_group.add_command(init_command)
     cli_group.add_command(add_command)
+    cli_group.add_command(add_note_command)
     cli_group.add_command(note_command)
     cli_group.add_command(show_command)
     cli_group.add_command(query_command)
@@ -289,3 +366,4 @@ def register_memory_commands(cli_group: click.Group) -> None:
     cli_group.add_command(export_command)
     cli_group.add_command(gc_command)
     cli_group.add_command(verify_command)
+    cli_group.add_command(migrate_command)

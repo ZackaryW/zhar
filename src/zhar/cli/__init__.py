@@ -17,6 +17,7 @@ class CategorizedGroup(click.Group):
         "Memory Commands": (
             "init",
             "add",
+            "add-note",
             "note",
             "show",
             "query",
@@ -25,6 +26,7 @@ class CategorizedGroup(click.Group):
             "export",
             "gc",
             "verify",
+            "migrate",
         ),
         "Facts Commands": (
             "facts",

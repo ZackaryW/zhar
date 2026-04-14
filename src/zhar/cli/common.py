@@ -68,3 +68,8 @@ def visible_metadata(node) -> list[tuple[str, Any]]:
     if node.group == "code_history" and node.node_type == "file_change" and node.source:
         return [(key, value) for key, value in items if key != "path"]
     return items
+
+
+def parse_target_ids(value: str) -> list[str]:
+    """Parse a comma-separated note target string into IDs."""
+    return [part.strip() for part in value.split(",") if part.strip()]

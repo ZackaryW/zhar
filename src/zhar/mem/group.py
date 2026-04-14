@@ -59,6 +59,7 @@ class NodeTypeDef:
     default_status: str = "active"
     singleton: bool = False
     auto_expires: bool = False
+    current_statuses: list[str] | None = None
     # %ZHAR:b61f%
     # True  → nodes of this type carry a content markdown body
     # False → graph-only / summary-only nodes (content is always None)
@@ -118,6 +119,15 @@ class GroupDef:
 
     def default_status(self, type_name: str) -> str:
         return self.get_type(type_name).default_status
+
+    def current_statuses_for_export(self, type_name: str) -> list[str]:
+        """Return the statuses that count as current for export for ``type_name``."""
+        node_type = self.get_type(type_name)
+        return list(node_type.current_statuses or [node_type.default_status])
+
+    def is_current_node_for_export(self, node: Any) -> bool:
+        """Return True when ``node`` should be included by default export."""
+        return getattr(node, "status", None) in self.current_statuses_for_export(getattr(node, "node_type"))
 
     def gather_runtime_context(
         self,

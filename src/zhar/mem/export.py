@@ -47,6 +47,8 @@ def export_group(
         groups=[group],
         statuses=statuses,
     ))
+    if statuses is None:
+        nodes = [node for node in nodes if store.groups[group].is_current_node_for_export(node)]
     if not nodes:
         return ""
 
@@ -85,7 +87,7 @@ def export_text(
 
     Empty groups (no nodes matching the filter) are omitted.
     """
-    target_groups = groups if groups is not None else list(store.groups)
+    target_groups = groups if groups is not None else [name for name in store.groups if name != "notes"]
 
     sections: list[str] = []
     total = 0

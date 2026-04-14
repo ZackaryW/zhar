@@ -8,6 +8,7 @@ It gives you a checked-in `.zhar/` directory where you can store:
 - active issues and blockers
 - architecture decisions and research findings
 - code-history notes linked to real source files
+- supplemental notes attached to primary nodes when extra detail should stay out of normal exports
 
 The goal is simple: keep the context that gets lost between sessions, handoffs, and model resets.
 
@@ -29,6 +30,8 @@ zhar organizes memory into four built-in groups:
 - `problem_tracking`: known issues and blockers
 - `decision_trail`: ADRs, decisions, lessons learned, research findings
 - `code_history`: file changes, function changes, breaking changes, revert notes
+
+It also includes a default `notes` group for additive note records that attach to other nodes. Notes are hidden from normal `export` output and only appear in `query` when you opt into linked note expansion.
 
 Each group is stored as its own JSON file under `.zhar/mem/`.
 
@@ -97,12 +100,36 @@ Chat context is ephemeral.
 Store durable project memory in .zhar/."
 ```
 
+Create a supplemental note attached to an existing node:
+
+```bash
+uv run zhar add-note <target-id> "Extra context that should stay out of normal exports"
+```
+
+Attach the same note to more than one node:
+
+```bash
+uv run zhar add-note <target-id> "Shared migration context" --target <other-target-id>
+```
+
 Check what is in the store:
 
 ```bash
 uv run zhar status
 uv run zhar query --group decision_trail
 uv run zhar show <node-id>
+```
+
+Show attached notes for matched nodes:
+
+```bash
+uv run zhar query --q "migration" --note-depth 1
+```
+
+Import a legacy zmem graph into zhar using only the `graph.json` surface:
+
+```bash
+uv run zhar migrate path/to/.zmem
 ```
 
 ## Daily Workflow

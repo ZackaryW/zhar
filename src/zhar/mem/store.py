@@ -15,6 +15,7 @@ from typing import Any
 
 from zhar.mem.backends.json_backend import JsonBackend
 from zhar.mem.group import GroupDef
+from zhar.mem.ids import make_id_unique, new_id
 from zhar.mem.index import MemIndex
 from zhar.mem.loader import load_all_groups
 from zhar.mem.node import Node, patch_node
@@ -119,6 +120,31 @@ class MemStore:
             result[name] = {"total": len(refs), "by_type": by_type}
         return result
 
+    def allocate_id(self, preferred: str | None = None, *, length: int = 5) -> str:
+        """Return a store-aware unique node ID.
+
+        ``preferred`` is preserved when possible, which allows migrations to keep
+        legacy IDs if they do not collide with existing records.
+        """
+        taken = {ref.id for ref in self.index.all()}
+        if preferred is not None:
+            return make_id_unique(preferred, taken, length=len(preferred))
+        return make_id_unique(new_id(length=length, taken=taken), taken, length=length)
+
+    def attached_notes(self, node_id: str) -> list[Node]:
+        """Return note nodes that attach to ``node_id``."""
+        notes_group = self.groups.get("notes")
+        if notes_group is None:
+            return []
+
+        attached: list[Node] = []
+        for node in self.query(Query(groups=["notes"])):
+            target_ids = node.metadata.get("target_ids", "")
+            targets = [part.strip() for part in str(target_ids).split(",") if part.strip()]
+            if node_id in targets:
+                attached.append(node)
+        return attached
+
     @property
     def root(self) -> Path:
         """Return the ``.zhar`` root directory for this store."""
@@ -169,6 +195,9 @@ class MemStore:
                 f"Unknown node type '{node.node_type}' in group '{node.group}'."
             )
 
+        if node.group == "notes" and node.node_type == "note":
+            self._validate_note_targets(node)
+
         # content must be None for non-memory-backed types
         if node.content is not None and not type_def.memory_backed:
             raise ValueError(
@@ -186,6 +215,19 @@ class MemStore:
                     f"singleton — an active node already exists (id={existing.id}). "
                     f"Archive or delete it before adding a new one."
                 )
+
+    def _validate_note_targets(self, node: Node) -> None:
+        """Validate that note nodes attach to at least one non-note node."""
+        target_ids = [part.strip() for part in str(node.metadata.get("target_ids", "")).split(",") if part.strip()]
+        if not target_ids:
+            raise ValueError("Note nodes must declare at least one target via metadata.target_ids.")
+
+        for target_id in target_ids:
+            target_ref = self.index.get(target_id)
+            if target_ref is None:
+                raise ValueError(f"Note target '{target_id}' does not exist.")
+            if target_ref.group == "notes":
+                raise ValueError("Note nodes cannot target other note nodes.")
 
     def _rebuild_index(self) -> None:
         """Populate the index from all backends (called once on startup)."""

@@ -47,6 +47,7 @@ GROUP = GroupDef(
             meta_cls=AdrMeta,
             valid_statuses=["proposed", "accepted", "superseded"],
             default_status="proposed",
+            current_statuses=["accepted"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -54,12 +55,14 @@ GROUP = GroupDef(
             meta_cls=DecisionMeta,
             valid_statuses=["active", "superseded", "archived"],
             default_status="active",
+            current_statuses=["active"],
         ),
         NodeTypeDef(
             name="lesson_learned",
             meta_cls=LessonLearnedMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
         NodeTypeDef(
@@ -67,6 +70,7 @@ GROUP = GroupDef(
             meta_cls=ResearchFindingMeta,
             valid_statuses=["active", "archived"],
             default_status="active",
+            current_statuses=["active"],
             memory_backed=True,
         ),
     ],

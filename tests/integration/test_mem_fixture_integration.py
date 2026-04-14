@@ -18,6 +18,7 @@ _EXPECTED_TOTALS = {
     "problem_tracking": 1,
     "decision_trail": 16,
     "code_history": 18,
+    "notes": 0,
 }
 _EXPECTED_MISSING_CONTENT_IDS = {
     "f6ce",
