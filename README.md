@@ -25,8 +25,9 @@ On top of memory, the stack system lets agent tools pull skills, instructions, a
 5. [Source Markers](#source-markers)
 6. [Facts](#facts)
 7. [Stack: Skills, Instructions, and Agents](#stack-skills-instructions-and-agents)
-8. [Source Bucket Shape](#source-bucket-shape)
-9. [Extending zhar](#extending-zhar)
+8. [Harness Files in Development](#harness-files-in-development)
+9. [Source Bucket Shape](#source-bucket-shape)
+10. [Extending zhar](#extending-zhar)
 
 ---
 
@@ -426,7 +427,119 @@ This text is emitted verbatim regardless of conditions.
 uv run zhar agent get my-agent
 ```
 
-This renders the registered agent source against live facts without writing a file. `RSKILL` tokens are resolved at this point.
+This renders the registered agent source against live facts without writing a file. `RCHUNK` is inlined, while `RSKILL` remains verbatim in the current implementation.
+
+---
+
+## Harness Files in Development
+
+This repo also has a repo-centric harness workflow for the built-in Copilot customization files that live under `.github/`.
+
+### Source of truth
+
+During development, the source of truth is the checked-in workspace customization tree:
+
+```text
+.github/
+  agents/
+  instructions/
+  skills/
+```
+
+Those files are mirrored into:
+
+```text
+src/zhar/harness/files/
+```
+
+The mirrored copy is what `zhar harness get ...` reads at runtime.
+
+### Flat `harness get` keys
+
+Use flattened keys to inspect the mirrored files directly:
+
+```bash
+uv run zhar harness get agent-zhar
+uv run zhar harness get instruction-zhar-memory
+uv run zhar harness get instruction-zhar-stack
+uv run zhar harness get instruction-zhar-agent-get
+uv run zhar harness get skill-zhar-template-resolution
+```
+
+`zhar harness get --help` dynamically lists the available keys and derives their one-line help text from the first sentence of each file's `description:` frontmatter.
+
+### Legacy memory-context export
+
+The older generated context summary still exists, but it is now explicitly the memory-context export path rather than the static agent file path:
+
+```bash
+uv run zhar harness export-mem-context
+uv run zhar harness export-mem-context --out .github/agents/custom-context.agent.md
+
+# legacy alias
+uv run zhar harness install context
+uv run zhar install
+```
+
+By default this writes:
+
+```text
+.github/agents/zhar-context.agent.md
+```
+
+That keeps the generated live memory/facts snapshot separate from the static repo-authored harness files such as `.github/agents/zhar.agent.md`.
+
+### Development mirror script
+
+This repo includes a maintainer macro at:
+
+```text
+scripts/sync_harness_files.py
+```
+
+It mirrors these directories:
+
+- `.github/agents`
+- `.github/instructions`
+- `.github/skills`
+
+into:
+
+- `src/zhar/harness/files/agents`
+- `src/zhar/harness/files/instructions`
+- `src/zhar/harness/files/skills`
+
+Run it manually when needed:
+
+```bash
+uv run python scripts/sync_harness_files.py
+uv run python scripts/sync_harness_files.py --check
+```
+
+`--check` fails when the mirror is stale, missing files, or contains unexpected files.
+
+### Lefthook automation
+
+The repo wires this into `lefthook` so the mirror stays current during development:
+
+```yaml
+pre-commit:
+  commands:
+    sync-harness-files:
+      run: uv run python scripts/sync_harness_files.py
+
+pre-push:
+  commands:
+    check-harness-files:
+      run: uv run python scripts/sync_harness_files.py --check
+```
+
+Practical workflow:
+
+1. Edit `.github/agents/`, `.github/instructions/`, or `.github/skills/`.
+2. Let `pre-commit` sync the mirrored files into `src/zhar/harness/files/`.
+3. Use `uv run zhar harness get <flattened-key>` to verify the runtime view.
+4. Use `pre-push` or `--check` to confirm the mirror is not stale.
 
 ---
 

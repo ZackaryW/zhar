@@ -6,6 +6,7 @@ import click
 
 from zhar.cli.agents import register_agent_commands
 from zhar.cli.facts import register_facts_commands
+from zhar.cli.harness import register_harness_commands
 from zhar.cli.install import register_install_commands
 from zhar.cli.memory import register_memory_commands
 from zhar.cli.stack import register_stack_commands
@@ -36,6 +37,9 @@ class CategorizedGroup(click.Group):
             "agent",
             "install",
             "uninstall",
+        ),
+        "Harness Commands": (
+            "harness",
         ),
         "Stack Commands": (
             "stack",
@@ -86,5 +90,6 @@ def cli(ctx: click.Context, root: str | None) -> None:
 register_memory_commands(cli)
 register_facts_commands(cli)
 register_install_commands(cli)
+register_harness_commands(cli)
 register_stack_commands(cli)
 register_agent_commands(cli)

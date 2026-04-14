@@ -460,5 +460,43 @@
     "expires_at": null,
     "metadata": {},
     "custom": {}
+  },
+  "2499b": {
+    "id": "2499b",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Split zhar guidance across agent, instructions, and skill files; document agent get marker resolution",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:50:25Z",
+    "updated_at": "2026-04-14T17:50:25Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "alternatives_considered": "keep everything in zhar.agent.md",
+      "tradeoffs": "less duplication, better discovery, accurate marker guidance"
+    },
+    "custom": {}
+  },
+  "25078": {
+    "id": "25078",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Add repo-centric harness get commands and repo macro for mirrored harness files",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T18:22:15Z",
+    "updated_at": "2026-04-14T18:22:15Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "alternatives_considered": "package-owned builtins catalog",
+      "tradeoffs": "simpler repo workflow, mirrored files maintained by script and lefthook"
+    },
+    "custom": {}
   }
 }

@@ -50,11 +50,13 @@ class TestHelp:
         assert "Memory Commands:" in result.output
         assert "Facts Commands:" in result.output
         assert "Agent Commands:" in result.output
+        assert "Harness Commands:" in result.output
         assert "Stack Commands:" in result.output
         assert "  add     " in result.output
         assert "  add-note" in result.output
         assert "  facts  " in result.output
         assert "  install    " in result.output
+        assert "  harness" in result.output
         assert "  stack  " in result.output
 
 

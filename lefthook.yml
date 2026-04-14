@@ -1,0 +1,9 @@
+pre-commit:
+  commands:
+    sync-harness-files:
+      run: uv run python scripts/sync_harness_files.py
+
+pre-push:
+  commands:
+    check-harness-files:
+      run: uv run python scripts/sync_harness_files.py --check
