@@ -54,6 +54,24 @@ Guidelines:
 - `--source <path>` is optional and acts as an explicit override that is still validated against cached sources.
 - `zhar stack sync` renders all installed items and writes them to `.github/agents/` by default.
 
+## Lookup Strategy
+
+- `zhar stack fetch` resolves directly from cached bucket sources. It does not consult the workspace install registry.
+- `zhar stack install` uses the same cached-source lookup model to resolve the source path before recording it in `.zhar/cfg/stack.json`.
+- Source discovery currently searches cached repos for these shapes:
+  - `.github/agents/*.agent.md`
+  - `.github/instructions/*.instructions.md`
+  - `.github/skills/<name>/SKILL.md`
+  - `.github/hooks/*.hook.md`
+  - legacy root-level `agents/*`, `instructions/*`, `skills/*`, `skills/<name>/SKILL.md`, and `hooks/*`
+- Accepted lookup keys are:
+  - bare discovered name such as `cline-memory-bank`
+  - repo-qualified name such as `org/repo:cline-memory-bank`
+  - exact cached `source_path` such as `.github/skills/cline-memory-bank/SKILL.md`
+- When multiple cached repos expose the same bare name, the bare lookup is ambiguous. Use the repo-qualified name or exact source path instead.
+- `stack fetch --fuzzy-conf` may choose the top-scoring cached source when there is no exact match. Auto-resolving `stack install` is exact-match only today.
+- If the repo, branch, or kind is already known, the resolver narrows candidates before matching. This is why `stack install <name> <repo> --kind <kind>` can resolve a path automatically.
+
 Output suffixes:
 
 - `agent` -> `<name>.agent.md`
@@ -79,3 +97,4 @@ zhar stack sync --dry-run
 ## Working Rule
 
 - When a stack behavior question depends on template markers or `agent get`, follow [zhar-agent-get.instructions.md](./zhar-agent-get.instructions.md) and [zhar-template-resolution](../skills/zhar-template-resolution/SKILL.md).
+- When a stack behavior question is about how files are found, installed, or fetched, treat this instruction as authoritative for cached-source lookup before falling back to the agent file.
