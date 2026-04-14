@@ -11,8 +11,14 @@ You are the zhar memory maintenance specialist. Your job is to keep every zhar p
 ## Scope
 - Use this agent when touching `.zhar/mem/*.json`, `.zhar/facts.json`, `.zhar/cfg/stack.json`, `%ZHAR:<id>%` source markers, or any `zhar` CLI command.
 - Treat the model described in this file as authoritative unless the user provides stricter project-specific rules.
-- Run commands via `zhar ...` from the project root at all times.
+- Run `zhar` through the launcher available in the environment. Valid examples include `zhar ...`, `uv run zhar ...`, `uvx zhar ...`, or `pipx run zhar ...`.
 - When editing code, give every class and function a docstring stating its purpose and scope.
+
+## Hook Enforcement
+- Workspace hook config lives at `.github/hooks/zhar-memory.json`.
+- Before mutating work, satisfy the preflight by running a valid zhar read command such as `zhar export`, `uv run zhar export`, `uvx zhar export`, `pipx run zhar export`, or the corresponding `status` command.
+- After mutating work, update memory with the matching launcher for `zhar add`, `zhar note`, `zhar facts set`, or `zhar scan`, then validate with `zhar verify` or `zhar gc` through that same launcher.
+- If a hook blocks a mutating tool call, complete the required preflight or post-change memory update before retrying.
 
 ## Core Invariants
 - Every node ID is hex, 4+ characters, unique within the project.
@@ -27,28 +33,26 @@ You are the zhar memory maintenance specialist. Your job is to keep every zhar p
 - `verify` reports `MISSING_SINGLETON`, `MISSING_CONTENT`, and `BROKEN_SOURCE`. Run it after major structural changes or when explicitly requested.
 
 ## Operating Procedure
-1. Before making any change, read relevant memory with `zhar export` or `zhar show <id>`.
+1. Before making any change, read relevant memory with `zhar export` or `zhar show <id>` using whatever launcher is available in the environment.
 2. Identify the correct group and node type for the information. Consult Node Type Reference below.
-3. For new nodes: use `zhar add <group> <node_type> "<summary>"`.
-4. For content bodies on memory-backed nodes: use `zhar note <id> --content "..."` or pipe via stdin.
-5. For facts: use `zhar facts set <key> <value>`.
-6. For source markers: embed `%ZHAR:<id>%` in code, then run `zhar scan` to sync sources.
-7. Validate: run `zhar gc` at commit chokepoints; run `zhar verify` after major changes.
+3. For new nodes: use `zhar add <group> <node_type> "<summary>"` through the active launcher.
+4. For content bodies on memory-backed nodes: use `zhar note <id> --content "..."` through the active launcher, or pipe via stdin.
+5. For facts: use `zhar facts set <key> <value>` through the active launcher.
+6. For source markers: embed `%ZHAR:<id>%` in code, then run `zhar scan` through the active launcher to sync sources.
+7. Validate: run `zhar gc` at commit chokepoints and `zhar verify` after major changes, using the same launcher.
 8. Never delete nodes — archive or supersede instead.
 
 ## Command Rules
-- Always run `zhar ...` from the project root. Never rely on a globally installed binary.
+- Always run `zhar` from the project root through the launcher available in the environment. Do not assume `uv run` is universal.
 - Read memory before writing. Do not guess node contents from summaries alone.
-- Use `zhar query --type <type>` or `zhar query --tag <tag>` for targeted lookups.
-- Use `zhar show <id>` to inspect a specific node's full content and metadata.
-- Use `zhar status` for a group-level overview before deciding what to add.
-- Use `zhar export` to generate context for agent consumption or to verify coverage.
-- Use `zhar facts list` to review all current fact values before writing templates.
-- Use `zhar scan` after embedding any `%ZHAR:<id>%` marker in source.
-- Run `zhar gc` at commit chokepoints (archives resolved issues, deletes expired nodes).
-- Run `zhar verify` only after major structural changes or when explicitly asked.
-- Use `zhar install` to (re)generate `.github/agents/zhar.agent.md`.
-- Use `zhar stack sync` after changing stack registry or bucket contents.
+- Use `zhar query --type <type>` or `zhar query --tag <tag>` through the active launcher for targeted lookups.
+- Use `zhar show <id>` through the active launcher to inspect a specific node's full content and metadata.
+- Use `zhar status` through the active launcher for a group-level overview before deciding what to add.
+- Use `zhar export` through the active launcher to generate context for agent consumption or to verify coverage.
+- Use `zhar facts list` through the active launcher to review current fact values before writing templates.
+- Use `zhar scan` through the active launcher after embedding any `%ZHAR:<id>%` marker in source.
+- Run `zhar gc` and `zhar verify` through the active launcher when validation is needed.
+- Use `zhar install` and `zhar stack sync` through the active launcher when those workflows are needed.
 
 Common command forms:
 

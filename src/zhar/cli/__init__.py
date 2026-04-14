@@ -10,7 +10,62 @@ from zhar.cli.memory import register_memory_commands
 from zhar.cli.stack import register_stack_commands
 
 
-@click.group()
+class CategorizedGroup(click.Group):
+    """Top-level Click group that renders commands grouped by category."""
+
+    command_categories: dict[str, tuple[str, ...]] = {
+        "Memory Commands": (
+            "init",
+            "add",
+            "note",
+            "show",
+            "query",
+            "status",
+            "scan",
+            "export",
+            "gc",
+            "verify",
+        ),
+        "Facts Commands": (
+            "facts",
+        ),
+        "Agent Commands": (
+            "install",
+            "uninstall",
+        ),
+        "Stack Commands": (
+            "stack",
+        ),
+    }
+
+    def format_commands(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Render commands grouped by the configured categories."""
+        commands = {name: self.get_command(ctx, name) for name in self.list_commands(ctx)}
+        rendered: set[str] = set()
+
+        for category, names in self.command_categories.items():
+            rows: list[tuple[str, str]] = []
+            for name in names:
+                command = commands.get(name)
+                if command is None or command.hidden:
+                    continue
+                rows.append((name, command.get_short_help_str()))
+                rendered.add(name)
+            if rows:
+                with formatter.section(category):
+                    formatter.write_dl(rows)
+
+        remaining = [
+            (name, command.get_short_help_str())
+            for name, command in commands.items()
+            if command is not None and not command.hidden and name not in rendered
+        ]
+        if remaining:
+            with formatter.section("Other Commands"):
+                formatter.write_dl(remaining)
+
+
+@click.group(cls=CategorizedGroup)
 @click.option(
     "--root",
     default=None,

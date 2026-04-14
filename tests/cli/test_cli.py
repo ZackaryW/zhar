@@ -42,6 +42,21 @@ class TestInit:
         assert result.exit_code == 0
 
 
+class TestHelp:
+    def test_top_level_help_groups_commands_by_category(self, runner):
+        result = runner.invoke(cli, ["--help"])
+
+        assert result.exit_code == 0, result.output
+        assert "Memory Commands:" in result.output
+        assert "Facts Commands:" in result.output
+        assert "Agent Commands:" in result.output
+        assert "Stack Commands:" in result.output
+        assert "  add     " in result.output
+        assert "  facts  " in result.output
+        assert "  install    " in result.output
+        assert "  stack  " in result.output
+
+
 # ── add ───────────────────────────────────────────────────────────────────────
 
 class TestAdd:
