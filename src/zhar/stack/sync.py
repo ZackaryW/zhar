@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from zhar.parser import TemplateContext, render_template
+from zhar.parser import TemplateContext
+from zhar.stack.render import render_installed_item
 
 if TYPE_CHECKING:
     from zhar.stack.bucket import BucketManager
@@ -50,48 +51,21 @@ def sync_stack(
     for item in registry.list_items():
         name = item["name"]
         kind = item["kind"]
-        repo = item["repo"]
-        branch = item["branch"]
-        source_path = item["source_path"]
 
         try:
-            repo_root = bucket_mgr.path_for(repo, branch=branch)
-
-            def _make_resolver(root: Path):
-                def _resolve(ref: str, base_dir: Path | None = None) -> str:
-                    search_base = base_dir if base_dir is not None else root
-                    candidate = search_base / ref
-                    if not candidate.exists():
-                        candidate = root / ref
-                    if not candidate.exists():
-                        raise FileNotFoundError(
-                            f"Chunk not found: {ref!r} (searched under {search_base})"
-                        )
-                    return candidate.read_text(encoding="utf-8")
-
-                return _resolve
-
-            source_file = repo_root / source_path
-            if not source_file.exists():
-                raise FileNotFoundError(
-                    f"Source file not found: {source_path!r} in {repo}@{branch}"
-                )
-
-            item_ctx = TemplateContext(
+            rendered = render_installed_item(
+                registry,
+                bucket_mgr,
+                name,
                 facts=context.facts,
                 groups=context.groups,
-                chunk_resolver=_make_resolver(repo_root),
-                base_dir=repo_root,
-                # Skills eagerly expand nested RSKILL tokens; all other kinds
-                # leave them verbatim for runtime resolution via `zhar agent get`
                 expand_skills=(kind == "skill"),
             )
-            rendered = render_template(source_file.read_text(encoding="utf-8"), item_ctx)
 
             suffix = _KIND_SUFFIX.get(kind, f".{kind}.md")
             out_path = output_dir / f"{name}{suffix}"
             if not dry_run:
-                out_path.write_text(rendered, encoding="utf-8")
+                out_path.write_text(rendered.rendered, encoding="utf-8")
 
             result.synced.append(name)
         except Exception as exc:  # noqa: BLE001
