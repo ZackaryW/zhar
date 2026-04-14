@@ -126,10 +126,10 @@ Show attached notes for matched nodes:
 uv run zhar query --q "migration" --note-depth 1
 ```
 
-Import a legacy zmem graph into zhar using only the `graph.json` surface:
+Import a legacy zmem graph into zhar using the `migrate` command group and only the `graph.json` surface:
 
 ```bash
-uv run zhar migrate path/to/.zmem
+uv run zhar migrate zmem path/to/.zmem
 ```
 
 ## Daily Workflow
@@ -148,9 +148,23 @@ Common commands:
 uv run zhar status
 uv run zhar query --q "orjson"
 uv run zhar export
+uv run zhar export --status archived
 uv run zhar verify
 uv run zhar gc --dry-run
 ```
+
+By default, `zhar export` does not dump every node in the store. It exports only the statuses each node type considers current.
+
+Current export boundaries for the built-in types:
+
+- `project_dna`: `active`
+- `problem_tracking`: `active`
+- `decision_trail/adr`: `accepted`
+- `decision_trail/decision`, `lesson_learned`, `research_finding`: `active`
+- `code_history`: `active`
+- `notes`: excluded from normal export
+
+If you need a non-default slice, pass `--status` explicitly. An explicit status filter overrides the default current boundary.
 
 ## Source Markers
 
@@ -251,6 +265,16 @@ uv run zhar gc --dry-run
 - broken source links
 
 `gc` handles expired nodes and archives resolved known issues.
+
+## Migration
+
+`migrate` is a command group for importing external memory formats into zhar.
+
+Currently supported:
+
+- `zhar migrate zmem <path>`: import a zmem instance using only its `graph.json`
+
+The zmem importer intentionally does not parse `.zmem/memory/*.md` bodies during migration. It maps compatible zmem node types into zhar groups, preserves legacy IDs when possible, and stores the original zmem JSON record as attached note context.
 
 ## Repository Layout
 

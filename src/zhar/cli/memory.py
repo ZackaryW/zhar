@@ -340,10 +340,15 @@ def verify_command(ctx: click.Context, project_root: str) -> None:
         sys.exit(1)
 
 
-@click.command(name="migrate")
+@click.group(name="migrate")
+def migrate_group() -> None:
+    """Import external memory formats into the current zhar store."""
+
+
+@migrate_group.command(name="zmem")
 @click.argument("source_path", type=click.Path(exists=True, path_type=Path))
 @click.pass_context
-def migrate_command(ctx: click.Context, source_path: Path) -> None:
+def migrate_zmem_command(ctx: click.Context, source_path: Path) -> None:
     """Migrate a zmem graph.json surface into the current zhar store."""
     store, _ = open_store(ctx.obj["root"])
     report = migrate_zmem_json(store, source_path)
@@ -366,4 +371,4 @@ def register_memory_commands(cli_group: click.Group) -> None:
     cli_group.add_command(export_command)
     cli_group.add_command(gc_command)
     cli_group.add_command(verify_command)
-    cli_group.add_command(migrate_command)
+    cli_group.add_command(migrate_group)
