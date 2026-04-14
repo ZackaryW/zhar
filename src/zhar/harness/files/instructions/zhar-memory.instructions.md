@@ -9,7 +9,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 - Read memory before writing. Use `zhar export`, `zhar status`, `zhar query`, or `zhar show <id>`.
 - If the task mentions errors, warnings, or failures, inspect Problems before choosing a fix.
 - Choose the correct group and node type before adding or updating records.
-- Treat understanding group and node delimitations as mandatory before mutation: decide whether the change belongs in `project_dna`, `problem_tracking`, `decision_trail`, `code_history`, or `notes` before writing anything.
+- Treat understanding group and node delimitations as mandatory before mutation: decide whether the change belongs in `project_dna`, `problem_tracking`, `decision_trail`, `architecture_context`, `code_history`, or `notes` before writing anything.
 - Distinguish workspace memory from stack/harness state. Memory lives under `.zhar/`; stack buckets and generated agent files are a separate workflow.
 
 ## Safe Mutation Rules
@@ -60,6 +60,19 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 | `lesson_learned` | yes | `active`, `archived` | `agent`, `trigger_event` |
 | `research_finding` | yes | `active`, `archived` | `agent`, `outcome`, `source_ref` |
 
+### architecture_context
+
+| Type | Memory-backed | Statuses | Metadata |
+|---|---|---|---|
+| `architecture` | yes | `active`, `stale`, `archived` | `agent`, `diagram_ref` |
+| `design_pattern` | yes | `active`, `archived` | `agent` |
+| `component_rel` | no | `active`, `deprecated`, `archived` | `agent`, `from_component`, `to_component`, `rel_type`, `contract` |
+| `tech_stack` | no | `active`, `stale`, `archived` | `agent`, `language`, `framework`, `version` |
+| `tech_setup` | yes | `active`, `stale`, `archived` | `agent` |
+| `tech_constraint` | yes | `active`, `archived` | `agent`, `category` |
+| `env_config` | no | `active`, `stale`, `archived` | `agent`, `env` |
+| `external_dep` | no | `active`, `deprecated`, `archived` | `agent`, `service_name`, `api_version`, `failure_modes` |
+
 ### code_history
 
 | Type | Memory-backed | Statuses | Metadata |
@@ -85,6 +98,10 @@ These node types must carry markdown content:
 - `decision_trail/adr`
 - `decision_trail/lesson_learned`
 - `decision_trail/research_finding`
+- `architecture_context/architecture`
+- `architecture_context/design_pattern`
+- `architecture_context/tech_setup`
+- `architecture_context/tech_constraint`
 - `code_history/breaking_change`
 - `notes/note`
 

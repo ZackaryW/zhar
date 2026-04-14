@@ -602,5 +602,43 @@
       "significance": "feature"
     },
     "custom": {}
+  },
+  "2be40": {
+    "id": "2be40",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Add architecture_context built-in memory group",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T22:53:55Z",
+    "updated_at": "2026-04-14T22:53:55Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/mem/groups/architecture_context.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "2cf4a": {
+    "id": "2cf4a",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Map zmem architecture and tech-context nodes directly into architecture_context",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T22:58:08Z",
+    "updated_at": "2026-04-14T22:58:08Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/migration/zmem.py",
+      "significance": "feature"
+    },
+    "custom": {}
   }
 }

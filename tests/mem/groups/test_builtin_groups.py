@@ -1,4 +1,4 @@
-"""TDD: all four built-in groups expose valid GroupDef instances."""
+"""TDD: all built-in groups expose valid GroupDef instances."""
 import pytest
 from zhar.mem.group import GroupDef, validate_node_metadata
 
@@ -7,6 +7,7 @@ from zhar.mem.group import GroupDef, validate_node_metadata
     "zhar.mem.groups.project_dna",
     "zhar.mem.groups.problem_tracking",
     "zhar.mem.groups.decision_trail",
+    "zhar.mem.groups.architecture_context",
     "zhar.mem.groups.code_history",
     "zhar.mem.groups.notes",
 ])
@@ -112,6 +113,40 @@ class TestCodeHistory:
         from zhar.mem.groups.code_history import GROUP
         names = [provider.name for provider in GROUP.runtime_context_providers]
         assert "git_companion" in names
+
+
+class TestArchitectureContext:
+    def test_has_expected_types(self):
+        from zhar.mem.groups.architecture_context import GROUP
+        expected = {
+            "architecture",
+            "design_pattern",
+            "component_rel",
+            "tech_stack",
+            "tech_setup",
+            "tech_constraint",
+            "env_config",
+            "external_dep",
+        }
+        assert expected == set(GROUP.type_names)
+
+    def test_tech_constraint_category_literal(self):
+        from zhar.mem.groups.architecture_context import GROUP
+        nt = GROUP.get_type("tech_constraint")
+        assert validate_node_metadata(nt, {"category": "security"}) == []
+        assert validate_node_metadata(nt, {"category": "latency"})
+
+    def test_env_config_env_literal(self):
+        from zhar.mem.groups.architecture_context import GROUP
+        nt = GROUP.get_type("env_config")
+        assert validate_node_metadata(nt, {"env": "prod"}) == []
+        assert validate_node_metadata(nt, {"env": "qa"})
+
+    def test_expected_memory_backed_types(self):
+        from zhar.mem.groups.architecture_context import GROUP
+        expected = {"architecture", "design_pattern", "tech_setup", "tech_constraint"}
+        actual = {nt.name for nt in GROUP.node_types if nt.memory_backed}
+        assert expected == actual
 
 
 class TestNotes:

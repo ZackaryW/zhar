@@ -115,9 +115,16 @@ class TestLoadBuiltinGroups:
         result = load_builtin_groups()
         assert isinstance(result, dict)
 
-    def test_contains_all_four_builtin_groups(self):
+    def test_contains_all_builtin_groups(self):
         result = load_builtin_groups()
-        for name in ("project_dna", "problem_tracking", "decision_trail", "code_history"):
+        for name in (
+            "project_dna",
+            "problem_tracking",
+            "decision_trail",
+            "architecture_context",
+            "code_history",
+            "notes",
+        ):
             assert name in result, f"Missing built-in group: {name}"
 
     def test_all_values_are_groupdefs(self):

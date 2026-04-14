@@ -47,7 +47,7 @@ zhar gives agent tools the foundation they need to operate successfully in a lon
 
 | Feature | Description |
 |---|---|
-| **Group-clustered memory** | Four built-in groups (`project_dna`, `problem_tracking`, `decision_trail`, `code_history`) plus user-defined groups. |
+| **Group-clustered memory** | Six built-in groups (`project_dna`, `problem_tracking`, `decision_trail`, `architecture_context`, `code_history`, `notes`) plus user-defined groups. |
 | **Checked-in storage** | Memory lives in `.zhar/mem/` as plain JSON files — diff-able and reviewable in git. |
 | **Agent export** | `zhar export` produces a compact text snapshot suitable for injection into agent context. |
 | **Source markers** | `%ZHAR:<id>%` tokens link nodes to specific lines in source files. |
@@ -188,6 +188,21 @@ Architectural decisions and research findings.
 | `lesson_learned` | yes | `active`, `archived` | `agent`, `trigger_event` |
 | `research_finding` | yes | `active`, `archived` | `agent`, `outcome` (adopted/rejected/deferred), `source_ref` |
 
+### architecture_context
+
+Architecture, design, and technical context that complements project goals and ADRs.
+
+| Type | Memory-backed | Valid statuses | Key metadata |
+|---|---|---|---|
+| `architecture` | yes | `active`, `stale`, `archived` | `agent`, `diagram_ref` |
+| `design_pattern` | yes | `active`, `archived` | `agent` |
+| `component_rel` | no | `active`, `deprecated`, `archived` | `agent`, `from_component`, `to_component`, `rel_type`, `contract` |
+| `tech_stack` | no | `active`, `stale`, `archived` | `agent`, `language`, `framework`, `version` |
+| `tech_setup` | yes | `active`, `stale`, `archived` | `agent` |
+| `tech_constraint` | yes | `active`, `archived` | `agent`, `category` (perf/security/compliance/budget) |
+| `env_config` | no | `active`, `stale`, `archived` | `agent`, `env` (dev/staging/prod) |
+| `external_dep` | no | `active`, `deprecated`, `archived` | `agent`, `service_name`, `api_version`, `failure_modes` |
+
 ### code_history
 
 Code-level change records that complement `git log`.
@@ -210,8 +225,9 @@ Additive supplemental notes that attach to other nodes. Hidden from normal `expo
 1. Add stable constraints to `project_dna`.
 2. Record active bugs or debt in `problem_tracking`.
 3. Capture important decisions in `decision_trail`.
-4. Link code-level changes in `code_history` with source markers.
-5. Run verify to catch incomplete records.
+4. Record architecture and technical context in `architecture_context`.
+5. Link code-level changes in `code_history` with source markers.
+6. Run verify to catch incomplete records.
 
 Common commands:
 
@@ -234,6 +250,7 @@ By default, `zhar export` exports only the statuses each node type considers cur
 | `problem_tracking` | `active` |
 | `decision_trail/adr` | `accepted` |
 | `decision_trail/decision`, `lesson_learned`, `research_finding` | `active` |
+| `architecture_context` | `active` |
 | `code_history` | `active` |
 | `notes` | excluded |
 

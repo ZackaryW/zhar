@@ -58,8 +58,9 @@ class TestMigrateZmemIntegration:
         stats = store.stats()
 
         assert report == ZmemMigrationReport(migrated_nodes=7, created_notes=8, preserved_ids=6)
-        assert stats["project_dna"]["total"] == 6
-        assert stats["decision_trail"]["total"] == 1
+        assert stats["project_dna"]["total"] == 4
+        assert stats["architecture_context"]["total"] == 3
+        assert stats["decision_trail"]["total"] == 0
         assert stats["notes"]["total"] == 8
 
     def test_direct_nodes_are_mapped_with_expected_groups_types_and_ids(self, migrated_store):
@@ -68,6 +69,8 @@ class TestMigrateZmemIntegration:
         goal = store.get("c27b")
         requirement = store.get("d566")
         architecture = store.get("9ffb")
+        tech_stack = store.get("7d0e")
+        tech_setup = store.get("6f8a")
 
         assert goal is not None
         assert goal.group == "project_dna"
@@ -86,10 +89,21 @@ class TestMigrateZmemIntegration:
         assert "original_source: .zmem/memory/d566.md" in requirement.content
 
         assert architecture is not None
-        assert architecture.group == "decision_trail"
-        assert architecture.node_type == "decision"
+        assert architecture.group == "architecture_context"
+        assert architecture.node_type == "architecture"
         assert architecture.status == "active"
         assert architecture.custom["zmem_type"] == "architecture"
+        assert architecture.content is not None
+
+        assert tech_stack is not None
+        assert tech_stack.group == "architecture_context"
+        assert tech_stack.node_type == "tech_stack"
+        assert tech_stack.content is None
+
+        assert tech_setup is not None
+        assert tech_setup.group == "architecture_context"
+        assert tech_setup.node_type == "tech_setup"
+        assert tech_setup.content is not None
 
     def test_notes_capture_original_json_records_for_direct_and_task_state_nodes(self, migrated_store):
         store, _ = migrated_store

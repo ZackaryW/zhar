@@ -31,6 +31,7 @@ _BUILTIN_MODULE_PATHS = [
     "zhar.mem.groups.project_dna",
     "zhar.mem.groups.problem_tracking",
     "zhar.mem.groups.decision_trail",
+    "zhar.mem.groups.architecture_context",
     "zhar.mem.groups.code_history",
     "zhar.mem.groups.notes",
 ]
