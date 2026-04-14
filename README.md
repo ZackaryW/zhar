@@ -139,6 +139,14 @@ uv run zhar query --group decision_trail
 uv run zhar show <node-id>
 ```
 
+Move a node through its lifecycle or remove an incorrect record:
+
+```bash
+uv run zhar set-status <node-id> resolved
+uv run zhar remove <node-id>
+uv run zhar prune --group notes --status archived --dry-run
+```
+
 Show attached notes for matched nodes:
 
 ```bash
@@ -234,11 +242,15 @@ Common commands:
 ```bash
 uv run zhar status
 uv run zhar query --q "orjson"
+uv run zhar set-status <node-id> archived
+uv run zhar prune --group problem_tracking --status resolved --dry-run
 uv run zhar export
 uv run zhar export --status archived
 uv run zhar verify
 uv run zhar gc --dry-run
 ```
+
+Prefer `set-status` when a node is still part of the historical record and only use `remove` or `prune` for incorrect, duplicate, or intentionally transient records.
 
 ### Export boundaries
 

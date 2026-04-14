@@ -15,8 +15,10 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 ## Safe Mutation Rules
 
 - Use `zhar add <group> <node_type> ...` for new nodes.
+- Use `zhar set-status <id> <status>` to move an existing node through its valid lifecycle states.
 - Use `zhar note <id> "..."` for a literal body, `zhar note <id> -` to read from stdin, or `zhar note <id> --from-env NAME` to read the body from an environment variable.
 - Use `zhar add-note <target-id> "..."` for supplemental notes that should stay out of normal exports.
+- Use `zhar remove <id>` or `zhar prune ...` only when a record is incorrect, duplicate, or intentionally transient; prefer lifecycle status changes when the node should remain in project history.
 - Use `zhar facts set [--scope project|global] <key> <value>` for facts, and `zhar facts unset` instead of hand-editing facts files.
 - Use `zhar scan` after embedding `%ZHAR:<id>%` in source.
 - Use `zhar show <id>`, `zhar query --note-depth 1`, or `zhar export` after a mutation to confirm the resulting state.

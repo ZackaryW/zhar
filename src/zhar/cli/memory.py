@@ -35,6 +35,52 @@ def _resolve_note_body(content: str | None, from_env: str | None) -> str:
     return click.get_text_stream("stdin").read() if content == "-" else content
 
 
+def _get_node_or_exit(ctx: click.Context, node_id: str):
+    """Return an existing node for *node_id* or exit with a user-facing error."""
+    store, _ = open_store(ctx.obj["root"])
+    node = store.get(node_id)
+    if node is None:
+        click.echo(f"Error: node '{node_id}' not found.", err=True)
+        sys.exit(1)
+    return store, node
+
+
+def _build_query(
+    *,
+    group: tuple[str, ...],
+    node_type: tuple[str, ...],
+    status: tuple[str, ...],
+    tag: tuple[str, ...],
+    text: str | None,
+    limit: int | None,
+) -> Query:
+    """Build a Query from CLI selector options."""
+    return Query(
+        groups=list(group) or None,
+        node_types=list(node_type) or None,
+        statuses=list(status) or None,
+        tags=list(tag) or None,
+        summary_contains=text,
+        limit=limit,
+    )
+
+
+def _ensure_prune_filters(query: Query) -> None:
+    """Reject prune requests that do not provide any narrowing filter."""
+    has_selector = any([
+        query.groups,
+        query.node_types,
+        query.statuses,
+        query.tags,
+        query.summary_contains,
+        query.limit is not None,
+    ])
+    if not has_selector:
+        raise click.UsageError(
+            "prune requires at least one filter such as --group, --type, --status, --tag, --q, or --limit."
+        )
+
+
 @click.command(name="init")
 @click.pass_context
 def init_command(ctx: click.Context) -> None:
@@ -51,6 +97,7 @@ def init_command(ctx: click.Context) -> None:
 @click.argument("group")
 @click.argument("node_type")
 @click.argument("summary")
+@click.option("--status", default=None, metavar="STATUS", help="Explicit initial status (default: node type default).")
 @click.option("--meta", "meta", multiple=True, metavar="KEY=VALUE", help="Metadata field (repeatable). e.g. --meta severity=high")
 @click.option("--tag", "tag", multiple=True, metavar="NAME", help="Tag (repeatable). e.g. --tag auth --tag perf")
 @click.option("--source", default=None, metavar="PATH", help="Source file reference.")
@@ -61,6 +108,7 @@ def add_command(
     group: str,
     node_type: str,
     summary: str,
+    status: str | None,
     meta: tuple[str, ...],
     tag: tuple[str, ...],
     source: str | None,
@@ -96,6 +144,7 @@ def add_command(
         group=group,
         node_type=node_type,
         summary=summary,
+        status=status or type_def.default_status,
         tags=list(tag),
         source=source,
         content=body,
@@ -201,6 +250,35 @@ def note_command(
     click.echo(f"Updated {node_id}  (content set, {len(body)} chars)")
 
 
+@click.command(name="set-status")
+@click.argument("node_id")
+@click.argument("status")
+@click.pass_context
+def set_status_command(ctx: click.Context, node_id: str, status: str) -> None:
+    """Update the status of an existing node."""
+    store, node = _get_node_or_exit(ctx, node_id)
+    try:
+        updated = patch_node(node, status=status)
+        store.save(updated)
+    except ValueError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+    click.echo(f"Updated {node_id}  status={status}")
+
+
+@click.command(name="remove")
+@click.argument("node_id")
+@click.pass_context
+def remove_command(ctx: click.Context, node_id: str) -> None:
+    """Delete one node by ID."""
+    store, _ = _get_node_or_exit(ctx, node_id)
+    deleted = store.delete(node_id)
+    if not deleted:
+        click.echo(f"Error: node '{node_id}' not found.", err=True)
+        sys.exit(1)
+    click.echo(f"Removed {node_id}")
+
+
 @click.command(name="show")
 @click.argument("node_id")
 @click.pass_context
@@ -269,6 +347,56 @@ def query_command(
                 if note.content:
                     for line in note.content.splitlines():
                         click.echo(f"    {line}")
+
+
+@click.command(name="prune")
+@click.option("--group", "group", multiple=True, metavar="NAME", help="Filter by group (repeatable).")
+@click.option("--type", "node_type", multiple=True, metavar="NAME", help="Filter by node type (repeatable).")
+@click.option("--status", multiple=True, metavar="STATUS", help="Filter by status (repeatable).")
+@click.option("--tag", "tag", multiple=True, metavar="TAG", help="Node must have all listed tags (repeatable).")
+@click.option("--q", "text", default=None, metavar="TEXT", help="Fuzzy summary search.")
+@click.option("--limit", default=None, type=int, metavar="N", help="Max results to remove.")
+@click.option("--dry-run", is_flag=True, help="Report matching nodes without deleting them.")
+@click.pass_context
+def prune_command(
+    ctx: click.Context,
+    group: tuple[str, ...],
+    node_type: tuple[str, ...],
+    status: tuple[str, ...],
+    tag: tuple[str, ...],
+    text: str | None,
+    limit: int | None,
+    dry_run: bool,
+) -> None:
+    """Delete all nodes that match the provided filters."""
+    store, _ = open_store(ctx.obj["root"])
+    query = _build_query(
+        group=group,
+        node_type=node_type,
+        status=status,
+        tag=tag,
+        text=text,
+        limit=limit,
+    )
+    try:
+        _ensure_prune_filters(query)
+    except click.UsageError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    nodes = store.query(query)
+    if dry_run:
+        click.echo(f"[dry-run] Would remove {len(nodes)} node(s).")
+        for node in nodes:
+            click.echo(f"  {node.id}  {node.group}/{node.node_type}  {node.status}  {node.summary!r}")
+        return
+
+    removed = 0
+    for node in nodes:
+        if store.delete(node.id):
+            removed += 1
+
+    click.echo(f"Removed {removed} node(s).")
 
 
 @click.command(name="status")
@@ -394,8 +522,11 @@ def register_memory_commands(cli_group: click.Group) -> None:
     cli_group.add_command(add_command)
     cli_group.add_command(add_note_command)
     cli_group.add_command(note_command)
+    cli_group.add_command(set_status_command)
+    cli_group.add_command(remove_command)
     cli_group.add_command(show_command)
     cli_group.add_command(query_command)
+    cli_group.add_command(prune_command)
     cli_group.add_command(status_command)
     cli_group.add_command(scan_command)
     cli_group.add_command(export_command)

@@ -173,6 +173,19 @@ class TestMemoryBackedEnforcement:
         assert store.get(n.id).content is None
 
 
+class TestStatusValidation:
+    def test_invalid_status_raises(self, store):
+        n = make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Bad status",
+            status="resolved",
+        )
+
+        with pytest.raises(ValueError, match="Invalid status"):
+            store.save(n)
+
+
 # ── query ─────────────────────────────────────────────────────────────────────
 
 class TestQuery:

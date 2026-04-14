@@ -17,6 +17,7 @@ _EXPECTED_TOTALS = {
     "project_dna": 7,
     "problem_tracking": 1,
     "decision_trail": 16,
+    "architecture_context": 0,
     "code_history": 18,
     "notes": 0,
 }
@@ -84,6 +85,7 @@ def test_cli_reads_the_copied_fixture_snapshot() -> None:
     assert status_result.exit_code == 0, status_result.output
     assert "Total nodes: 42" in status_result.output
     assert "project_dna  (7)" in status_result.output
+    assert "architecture_context  (0)" in status_result.output
     assert "code_history  (18)" in status_result.output
 
     assert show_result.exit_code == 0, show_result.output

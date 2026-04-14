@@ -1,4 +1,4 @@
-"""TDD: zhar CLI commands — init, add, note, show, query, status."""
+"""TDD: zhar CLI commands — init, add, mutation, query, and status."""
 from types import SimpleNamespace
 from pathlib import Path
 import pytest
@@ -54,6 +54,9 @@ class TestHelp:
         assert "Stack Commands:" in result.output
         assert "  add     " in result.output
         assert "  add-note" in result.output
+        assert "  set-status" in result.output
+        assert "  remove    " in result.output
+        assert "  prune     " in result.output
         assert "  facts  " in result.output
         assert "  install    " in result.output
         assert "  harness" in result.output
@@ -327,6 +330,125 @@ class TestShow:
     def test_show_unknown_id_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, ["--root", str(project), "show", "zzzz"])
         assert result.exit_code != 0
+
+
+class TestSetStatus:
+    def _add_issue(self, project, runner) -> str:
+        """Helper: add a known_issue node and return its ID."""
+        result = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "problem_tracking", "known_issue", "Broken status flow",
+            "--content", "## Details\n\nNeeds a lifecycle.",
+        ])
+        assert result.exit_code == 0, result.output
+        import re
+        return re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
+
+    def test_set_status_updates_node(self, project, runner):
+        nid = self._add_issue(project, runner)
+
+        result = runner.invoke(cli, ["--root", str(project), "set-status", nid, "resolved"])
+
+        assert result.exit_code == 0, result.output
+        store = MemStore(project)
+        assert store.get(nid).status == "resolved"
+
+    def test_set_status_rejects_invalid_status(self, project, runner):
+        nid = self._add_issue(project, runner)
+
+        result = runner.invoke(cli, ["--root", str(project), "set-status", nid, "maybe"])
+
+        assert result.exit_code != 0
+        assert "Invalid status" in result.output
+
+    def test_set_status_unknown_id_exits_nonzero(self, project, runner):
+        result = runner.invoke(cli, ["--root", str(project), "set-status", "zzzz", "resolved"])
+
+        assert result.exit_code != 0
+        assert "not found" in result.output
+
+
+class TestRemove:
+    def test_remove_deletes_node(self, project, runner):
+        add = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Remove me",
+            "--content", "## Why\n\nTemporary.",
+        ])
+        import re
+        nid = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
+
+        result = runner.invoke(cli, ["--root", str(project), "remove", nid])
+
+        assert result.exit_code == 0, result.output
+        store = MemStore(project)
+        assert store.get(nid) is None
+
+    def test_remove_unknown_id_exits_nonzero(self, project, runner):
+        result = runner.invoke(cli, ["--root", str(project), "remove", "zzzz"])
+
+        assert result.exit_code != 0
+        assert "not found" in result.output
+
+
+class TestPrune:
+    def _populate(self, project, runner) -> None:
+        """Create nodes with distinct groups, tags, and statuses for prune tests."""
+        issue = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "problem_tracking", "known_issue", "Prunable issue",
+            "--tag", "stale",
+            "--content", "## Details\n\nCan be removed.",
+        ])
+        assert issue.exit_code == 0, issue.output
+        import re
+        issue_id = re.search(r"Added ([0-9a-f]{4,5})", issue.output).group(1)
+        set_status = runner.invoke(cli, ["--root", str(project), "set-status", issue_id, "resolved"])
+        assert set_status.exit_code == 0, set_status.output
+
+        requirement = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Keep me",
+            "--tag", "keep",
+            "--content", "## Why\n\nStill needed.",
+        ])
+        assert requirement.exit_code == 0, requirement.output
+
+    def test_prune_dry_run_reports_matches_without_deleting(self, project, runner):
+        self._populate(project, runner)
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "prune",
+            "--group", "problem_tracking",
+            "--status", "resolved",
+            "--dry-run",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "[dry-run] Would remove 1 node(s)." in result.output
+        store = MemStore(project)
+        assert len(store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["problem_tracking"]))) == 1
+
+    def test_prune_removes_matching_nodes(self, project, runner):
+        self._populate(project, runner)
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "prune",
+            "--group", "problem_tracking",
+            "--status", "resolved",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Removed 1 node(s)." in result.output
+        store = MemStore(project)
+        assert len(store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["problem_tracking"]))) == 0
+        assert len(store.query(__import__("zhar.mem.query", fromlist=["Query"]).Query(groups=["project_dna"]))) == 1
+
+    def test_prune_requires_at_least_one_filter(self, project, runner):
+        result = runner.invoke(cli, ["--root", str(project), "prune"])
+
+        assert result.exit_code != 0
+        assert "at least one filter" in result.output.lower()
 
 
 # ── query ─────────────────────────────────────────────────────────────────────

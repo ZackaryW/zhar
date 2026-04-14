@@ -17,6 +17,7 @@ def store(tmp_path) -> MemStore:
                      summary="Use orjson", metadata={"priority": "high"}))
     s.save(make_node(group="decision_trail", node_type="adr",
                      summary="Group-clustered storage",
+                     status="accepted",
                      content="## Status\naccepted"))
     return s
 

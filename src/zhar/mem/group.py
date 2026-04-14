@@ -81,6 +81,7 @@ class GroupDef:
     name: str
     node_types: list[NodeTypeDef] = field(default_factory=list)
     runtime_context_providers: list[RuntimeContextProvider] = field(default_factory=list)
+    export_limit: int | None = None
 
     def __post_init__(self) -> None:
         names = [nt.name for nt in self.node_types]
@@ -128,6 +129,12 @@ class GroupDef:
     def is_current_node_for_export(self, node: Any) -> bool:
         """Return True when ``node`` should be included by default export."""
         return getattr(node, "status", None) in self.current_statuses_for_export(getattr(node, "node_type"))
+
+    def limit_nodes_for_export(self, nodes: list[Any]) -> list[Any]:
+        """Return ``nodes`` truncated to this group's export limit when configured."""
+        if self.export_limit is None:
+            return nodes
+        return nodes[:self.export_limit]
 
     def gather_runtime_context(
         self,

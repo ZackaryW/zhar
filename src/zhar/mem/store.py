@@ -195,6 +195,12 @@ class MemStore:
                 f"Unknown node type '{node.node_type}' in group '{node.group}'."
             )
 
+        if not group_def.is_valid_status(node.node_type, node.status):
+            raise ValueError(
+                f"Invalid status '{node.status}' for node type '{node.node_type}' in group "
+                f"'{node.group}'. Valid statuses: {type_def.valid_statuses}"
+            )
+
         if node.group == "notes" and node.node_type == "note":
             self._validate_note_targets(node)
 

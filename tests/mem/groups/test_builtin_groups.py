@@ -103,6 +103,10 @@ class TestCodeHistory:
         expected = {"file_change", "function_change", "breaking_change", "revert_note"}
         assert expected == set(GROUP.type_names)
 
+    def test_has_export_limit_of_fifteen(self):
+        from zhar.mem.groups.code_history import GROUP
+        assert GROUP.export_limit == 15
+
     def test_significance_literal(self):
         from zhar.mem.groups.code_history import GROUP
         nt = GROUP.get_type("file_change")

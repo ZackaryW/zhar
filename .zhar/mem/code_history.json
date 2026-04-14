@@ -640,5 +640,62 @@
       "significance": "feature"
     },
     "custom": {}
+  },
+  "2d5cb": {
+    "id": "2d5cb",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Add public CLI surface for status updates and targeted node pruning",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T23:02:29Z",
+    "updated_at": "2026-04-14T23:02:29Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/cli/memory.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "2fdca": {
+    "id": "2fdca",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Limit code_history export to 15 entries by group definition",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T23:05:24Z",
+    "updated_at": "2026-04-14T23:05:24Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/mem/groups/code_history.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "30005": {
+    "id": "30005",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Align tests with ADR status validation and architecture_context fixture counts",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T23:06:48Z",
+    "updated_at": "2026-04-14T23:06:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "tests",
+      "significance": "patch"
+    },
+    "custom": {}
   }
 }

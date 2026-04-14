@@ -47,13 +47,18 @@ def export_group(
         groups=[group],
         statuses=statuses,
     ))
+    group_def = store.groups[group]
     if statuses is None:
-        nodes = [node for node in nodes if store.groups[group].is_current_node_for_export(node)]
+        nodes = [node for node in nodes if group_def.is_current_node_for_export(node)]
+    if not nodes:
+        return ""
+
+    nodes = group_def.limit_nodes_for_export(_sort_nodes(nodes))
     if not nodes:
         return ""
 
     lines: list[str] = [f"## {group} ({len(nodes)})"]
-    for node in _sort_nodes(nodes):
+    for node in nodes:
         lines.append(_format_node_line(node))
         if node.content:
             for content_line in node.content.splitlines():
@@ -61,7 +66,7 @@ def export_group(
 
     if include_runtime_context:
         runtime_root = project_root if project_root is not None else store.project_root
-        blocks = store.groups[group].gather_runtime_context(
+        blocks = group_def.gather_runtime_context(
             nodes=nodes,
             project_root=runtime_root,
         )

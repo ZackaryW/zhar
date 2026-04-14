@@ -155,6 +155,7 @@ def _gather_git_companion_context(request: RuntimeContextRequest) -> str | None:
 
 GROUP = GroupDef(
     name="code_history",
+    export_limit=15,
     runtime_context_providers=[
         RuntimeContextProvider(
             name="git_companion",

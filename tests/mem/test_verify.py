@@ -43,14 +43,14 @@ class TestMissingSingleton:
 class TestMissingContent:
     def test_warns_when_backed_node_has_no_content(self, store):
         store.save(make_node(group="decision_trail", node_type="adr",
-                             summary="Some ADR", content=None))
+                             summary="Some ADR", status="accepted", content=None))
         issues = run_verify(store)
         codes = [i.code for i in issues]
         assert "MISSING_CONTENT" in codes
 
     def test_no_warning_when_backed_node_has_content(self, store):
         store.save(make_node(group="decision_trail", node_type="adr",
-                             summary="Some ADR", content="## Details\nHere."))
+                             summary="Some ADR", status="accepted", content="## Details\nHere."))
         issues = run_verify(store)
         content_issues = [i for i in issues if i.code == "MISSING_CONTENT"]
         assert not content_issues

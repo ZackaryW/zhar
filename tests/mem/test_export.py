@@ -163,6 +163,21 @@ class TestExportGroup:
         assert "Diff stat:" in out
         assert "Recent commits:" in out
 
+    def test_code_history_export_is_capped_at_fifteen_entries_by_group_definition(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+
+        for index in range(20):
+            store.save(make_node(
+                group="code_history",
+                node_type="file_change",
+                summary=f"file change {index:02d}",
+            ))
+
+        out = export_group(store, "code_history")
+
+        assert "## code_history (15)" in out
+        assert out.count("file_change ·") == 15
+
 
 # ── export_text ───────────────────────────────────────────────────────────────
 

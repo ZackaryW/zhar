@@ -1,0 +1,23 @@
+{
+  "2eaad": {
+    "id": "2eaad",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory CLI lifecycle reconciliation surface",
+    "status": "active",
+    "tags": [
+      "cli",
+      "memory",
+      "lifecycle"
+    ],
+    "source": null,
+    "content": "## Commands\n\n- Use `uv run zhar set-status <id> <status>` to move nodes through valid lifecycle states.\n- Use `uv run zhar remove <id>` only for incorrect or intentionally transient records.\n- Use `uv run zhar prune ...` with filters and preferably `--dry-run` first when reconciling many unexpected nodes.\n\n## Development Context\n\nWhen developing zhar inside this repository, prefer `uv run zhar` so the CLI reflects the current workspace source tree rather than an older installed entrypoint.\n\n## Constraint\n\nPrefer status transitions over deletion whenever the node should remain part of project history.",
+    "created_at": "2026-04-14T23:03:15Z",
+    "updated_at": "2026-04-14T23:03:15Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  }
+}
