@@ -2,14 +2,14 @@
 
 `zhar agent get --skill <name>` and `zhar agent get --instruction <name>`
 render the installed item from its bucket source at runtime, with the current
-workspace facts compiled in and %%ZHAR.RSKILL%% tokens fully resolved.
+workspace facts compiled in and the same marker parser used by stack commands.
 
 This is distinct from `zhar stack sync` which:
   - Writes output files to disk
   - Leaves %%ZHAR.RSKILL%% verbatim in agent/instruction/hook output
   - Only expands %%ZHAR.RSKILL%% when the item kind is 'skill'
 
-`agent get` always renders with expand_skills=True against the live workspace
+`agent get` renders with expand_skills=False against the live workspace
 facts, and prints the result to stdout (no file written).
 """
 from __future__ import annotations

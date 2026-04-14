@@ -118,6 +118,13 @@ Chat context is ephemeral.
 Store durable project memory in .zhar/."
 ```
 
+You can also supply the body via stdin or an environment variable:
+
+```bash
+printf '## Context\n\nGenerated elsewhere.' | uv run zhar note <node-id> -
+uv run zhar note <node-id> --from-env ZHAR_NOTE_BODY
+```
+
 Create a supplemental note attached to an existing node:
 
 ```bash
@@ -340,6 +347,15 @@ uv run zhar stack sync --dry-run           # preview without writing
 uv run zhar stack sync --out .github/copilot   # custom output directory
 ```
 
+### Fetching directly from cached buckets
+
+```bash
+uv run zhar stack fetch cline-memory-bank
+uv run zhar stack fetch cline-memory-bnk --fuzzy-conf 0.82
+```
+
+`stack fetch` does not use the workspace install registry. It searches cached bucket sources directly, renders the matched source against live workspace facts and memory, and prints the workspace-ready output without writing a file.
+
 Output filename is determined by kind:
 
 | Kind | Output file |
@@ -421,13 +437,14 @@ This text is emitted verbatim regardless of conditions.
 - When `kind=skill`: skills are eagerly inlined during `stack sync` so distributed skill files are self-contained.
 - For all other kinds (`agent`, `instruction`, `hook`): `RSKILL` is left verbatim so the consuming tool (e.g. `zhar agent get`) can resolve skills at runtime against the live workspace.
 
-#### Generating a single agent file on demand
+#### Fetching one workspace-ready stack render on demand
 
 ```bash
-uv run zhar agent get my-agent
+uv run zhar stack fetch my-agent
+uv run zhar stack fetch my-agnt --fuzzy-conf 0.82
 ```
 
-This renders the registered agent source against live facts without writing a file. `RCHUNK` is inlined, while `RSKILL` remains verbatim in the current implementation.
+This renders the matched cached stack source against live workspace facts without writing a file. `RCHUNK` is inlined, while `RSKILL` remains verbatim in the current implementation. When `--fuzzy-conf` is provided and no exact source name exists, zhar chooses the single top-scoring cached source if its confidence clears the threshold.
 
 ---
 

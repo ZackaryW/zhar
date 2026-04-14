@@ -171,6 +171,49 @@ class TestNote:
         ])
         assert result.exit_code == 0, result.output
 
+    def test_note_reads_content_from_stdin(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "note", nid, "-"],
+            input="## Body\n\nFrom stdin.",
+        )
+        assert result.exit_code == 0, result.output
+
+    def test_note_reads_content_from_env_var(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY"],
+            env={"ZHAR_NOTE_BODY": "## Body\n\nFrom env."},
+        )
+        assert result.exit_code == 0, result.output
+
+    def test_note_requires_content_or_env_var(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(cli, ["--root", str(project), "note", nid])
+        assert result.exit_code != 0
+        assert "Missing CONTENT" in result.output
+
+    def test_note_rejects_missing_env_var(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY"],
+        )
+        assert result.exit_code != 0
+        assert "is not set" in result.output
+
+    def test_note_rejects_content_and_env_var_together(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "note", nid, "literal", "--from-env", "ZHAR_NOTE_BODY"],
+            env={"ZHAR_NOTE_BODY": "ignored"},
+        )
+        assert result.exit_code != 0
+        assert "either CONTENT or --from-env" in result.output
+
     def test_note_on_non_backed_type_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, [
             "--root", str(project), "add",

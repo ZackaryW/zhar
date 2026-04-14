@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 from pathlib import Path
 
@@ -18,6 +19,20 @@ from zhar.mem.scan import scan_tree, sync_sources
 from zhar.mem.verify import Severity, run_verify
 from zhar.migration.zmem import migrate_zmem_json
 from zhar.utils.fs import ensure_gitignore_entry
+
+
+def _resolve_note_body(content: str | None, from_env: str | None) -> str:
+    """Resolve note body text from a literal argument, stdin, or environment variable."""
+    if from_env is not None and content is not None:
+        raise click.UsageError("Provide either CONTENT or --from-env, not both.")
+    if from_env is not None:
+        try:
+            return os.environ[from_env]
+        except KeyError as exc:
+            raise click.UsageError(f"Environment variable {from_env!r} is not set.") from exc
+    if content is None:
+        raise click.UsageError("Missing CONTENT. Provide text, '-', or --from-env NAME.")
+    return click.get_text_stream("stdin").read() if content == "-" else content
 
 
 @click.command(name="init")
@@ -147,11 +162,26 @@ def add_note_command(
 
 @click.command(name="note")
 @click.argument("node_id")
-@click.argument("content")
+@click.argument("content", required=False)
+@click.option(
+    "--from-env",
+    default=None,
+    metavar="NAME",
+    help="Read the note body from environment variable NAME.",
+)
 @click.pass_context
-def note_command(ctx: click.Context, node_id: str, content: str) -> None:
+def note_command(
+    ctx: click.Context,
+    node_id: str,
+    content: str | None,
+    from_env: str | None,
+) -> None:
     """Attach or replace the markdown body of a memory-backed node."""
-    body = click.get_text_stream("stdin").read() if content == "-" else content
+    try:
+        body = _resolve_note_body(content, from_env)
+    except click.UsageError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
     store, _ = open_store(ctx.obj["root"])
     node = store.get(node_id)
     if node is None:

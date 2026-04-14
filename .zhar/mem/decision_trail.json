@@ -70,9 +70,9 @@
       "porting"
     ],
     "source": null,
-    "content": null,
+    "content": "## Finding\n\nThe legacy zmem sources cli.py, core/cache.py, and utils/ids.py were useful references during the zhar port because they captured working patterns for command structure, file-backed caching, and id handling.\n\n## Outcome\n\nThese references were adopted selectively, not copied wholesale. They helped identify proven ideas worth preserving while zhar reworked them into the current group-based memory and harness model.\n\n## Influence\n\n- CLI ergonomics and command boundaries.\n- Cache behavior and persistence expectations.\n- Stable id allocation and migration thinking.\n",
     "created_at": "2026-04-13T16:39:48Z",
-    "updated_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:40Z",
     "expires_at": null,
     "metadata": {
       "outcome": "adopted",
@@ -152,9 +152,9 @@
       "agent-file"
     ],
     "source": null,
-    "content": null,
+    "content": "## Finding\n\nzmem.agent.md served as the reference design for the agent-facing guidance style: prescriptive procedures, explicit command rules, node type references, and invariants.\n\n## Outcome\n\nThe document was adopted as a design input for zhar's own agent harness files, but the resulting guidance was split into agent, instruction, and skill artifacts so the workflow is more modular and easier to keep accurate.\n\n## Influence\n\n- Strong operating rules for agents touching memory and stack state.\n- Explicit reporting requirements after mutations.\n- Centralized invariants and non-negotiables for the harness workflow.\n",
     "created_at": "2026-04-13T22:19:23Z",
-    "updated_at": "2026-04-13T22:19:23Z",
+    "updated_at": "2026-04-14T20:45:40Z",
     "expires_at": null,
     "metadata": {
       "outcome": "adopted",
