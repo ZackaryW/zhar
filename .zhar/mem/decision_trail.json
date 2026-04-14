@@ -498,5 +498,24 @@
       "tradeoffs": "simpler repo workflow, mirrored files maintained by script and lefthook"
     },
     "custom": {}
+  },
+  "26d76": {
+    "id": "26d76",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "stack install now shares cached-source resolution with stack fetch and auto-resolves source paths from cached buckets",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T21:02:48Z",
+    "updated_at": "2026-04-14T21:02:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "alternatives_considered": "keep manual --source and separate fetch/install lookup paths",
+      "tradeoffs": "simpler UX, less manual path handling, tighter coupling to cached-source discovery"
+    },
+    "custom": {}
   }
 }

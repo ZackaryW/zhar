@@ -50,7 +50,8 @@ Guidelines:
 
 - Cached bucket repos live under `~/.zhar/stack/`.
 - The per-project registry lives at `.zhar/cfg/stack.json`.
-- `zhar stack install <name> <repo> --kind <kind> --source <path>` records the item in the registry.
+- `zhar stack install <name> <repo> --kind <kind>` records the item in the registry using the same cached-source lookup model as `stack fetch`.
+- `--source <path>` is optional and acts as an explicit override that is still validated against cached sources.
 - `zhar stack sync` renders all installed items and writes them to `.github/agents/` by default.
 
 Output suffixes:
@@ -67,8 +68,8 @@ zhar stack bucket add org/repo --branch main
 zhar stack bucket list
 zhar stack bucket remove org/repo
 
-zhar stack install my-agent org/repo --kind agent --source agents/base.md
-zhar stack install python-skill org/repo --kind skill --source skills/python.md
+zhar stack install my-agent org/repo --kind agent
+zhar stack install python-skill org/repo --kind skill
 
 zhar stack list
 zhar stack sync

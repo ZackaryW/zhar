@@ -331,12 +331,15 @@ Buckets require `zuu` for the initial `add` (network pull). Read operations (`li
 ```bash
 # Register an item from a cached bucket
 uv run zhar stack install my-agent org/repo \
-  --kind agent \
-  --source agents/base.md
+  --kind agent
 
 uv run zhar stack install python-skill org/repo \
+  --kind skill
+
+# Use --source only when you want to override the auto-resolved cached source
+uv run zhar stack install python-skill org/repo \
   --kind skill \
-  --source skills/python.md
+  --source .github/skills/python-skill/SKILL.md
 
 uv run zhar stack list           # show all installed items
 uv run zhar stack uninstall my-agent
@@ -355,6 +358,8 @@ uv run zhar stack fetch cline-memory-bnk --fuzzy-conf 0.82
 ```
 
 `stack fetch` does not use the workspace install registry. It searches cached bucket sources directly, renders the matched source against live workspace facts and memory, and prints the workspace-ready output without writing a file.
+
+`stack install` now uses the same cached-source resolution model, but records the resolved source path in the workspace registry so `stack sync` can render it later.
 
 Output filename is determined by kind:
 

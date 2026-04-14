@@ -78,6 +78,24 @@ def _candidate_display_names(candidates: list[CachedStackSource]) -> dict[str, s
     return labels
 
 
+def _filter_cached_stack_sources(
+    candidates: list[CachedStackSource],
+    *,
+    repo: str | None = None,
+    branch: str | None = None,
+    kind: str | None = None,
+) -> list[CachedStackSource]:
+    """Return cached sources filtered by repo, branch, and kind."""
+    filtered = candidates
+    if repo is not None:
+        filtered = [candidate for candidate in filtered if candidate.repo == repo]
+    if branch is not None:
+        filtered = [candidate for candidate in filtered if candidate.branch == branch]
+    if kind is not None:
+        filtered = [candidate for candidate in filtered if candidate.kind == kind]
+    return filtered
+
+
 def discover_cached_stack_sources(bucket_mgr: "BucketManager") -> list[CachedStackSource]:
     """Discover fetchable stack sources across every cached bucket repo."""
     candidates: list[CachedStackSource] = []
@@ -145,12 +163,24 @@ def resolve_cached_stack_source(
     bucket_mgr: "BucketManager",
     requested_name: str,
     *,
+    repo: str | None = None,
+    branch: str | None = None,
+    kind: str | None = None,
     fuzzy_conf: float | None = None,
 ) -> CachedStackSource:
     """Resolve *requested_name* to a cached stack source, optionally using fuzzy matching."""
-    candidates = discover_cached_stack_sources(bucket_mgr)
+    candidates = _filter_cached_stack_sources(
+        discover_cached_stack_sources(bucket_mgr),
+        repo=repo,
+        branch=branch,
+        kind=kind,
+    )
     if not candidates:
-        raise KeyError("No cached stack sources found. Run: zhar stack bucket add <repo>")
+        if repo is None:
+            raise KeyError("No cached stack sources found. Run: zhar stack bucket add <repo>")
+        raise KeyError(
+            f"No cached stack sources found for {repo!r}@{branch or 'main'} kind={kind or '*'}"
+        )
 
     display_names = _candidate_display_names(candidates)
     exact_matches = [

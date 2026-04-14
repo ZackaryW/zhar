@@ -9,6 +9,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 - Read memory before writing. Use `zhar export`, `zhar status`, `zhar query`, or `zhar show <id>`.
 - If the task mentions errors, warnings, or failures, inspect Problems before choosing a fix.
 - Choose the correct group and node type before adding or updating records.
+- Treat understanding group and node delimitations as mandatory before mutation: decide whether the change belongs in `project_dna`, `problem_tracking`, `decision_trail`, `code_history`, or `notes` before writing anything.
 - Distinguish workspace memory from stack/harness state. Memory lives under `.zhar/`; stack buckets and generated agent files are a separate workflow.
 
 ## Safe Mutation Rules
@@ -25,6 +26,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 
 - Every node ID is hex, 4+ characters, and unique within the project.
 - `id`, `group`, `node_type`, and `created_at` are immutable after creation.
+- Group and node-type boundaries are part of the data model; do not blur them by storing issue tracking in `project_dna`, decisions in `code_history`, or supplemental commentary outside `notes`.
 - Singleton node types may have at most one active node.
 - Facts are always string-to-string across project, global, and effective scopes.
 - `orjson` is the only JSON serializer used by zhar.

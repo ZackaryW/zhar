@@ -77,7 +77,14 @@ def stack_bucket_remove(ctx: click.Context, repo: str, branch: str | None) -> No
 @click.argument("repo")
 @click.option("--branch", default="main", show_default=True)
 @click.option("--kind", required=True, type=click.Choice(["agent", "instruction", "skill", "hook"]), help="Kind of item to install.")
-@click.option("--source", "source_path", required=True, metavar="PATH", help="Relative path within the repo to the source file.")
+@click.option("--source", "source_path", default=None, metavar="PATH", help="Relative path within the repo to the source file. When omitted, zhar auto-resolves it from the cached bucket using NAME.")
+@click.option(
+    "--cache-dir",
+    default=None,
+    type=click.Path(),
+    metavar="DIR",
+    help="Override the bucket cache directory (default: ~/.zhar/stack/).",
+)
 @click.pass_context
 def stack_install(
     ctx: click.Context,
@@ -85,13 +92,35 @@ def stack_install(
     repo: str,
     branch: str,
     kind: str,
-    source_path: str,
+    source_path: str | None,
+    cache_dir: str | None,
 ) -> None:
     """Install an item from a bucket repo into this project."""
-    registry, bucket_manager, _ = stack_helpers(ctx)
-    bucket_manager.add(repo, branch=branch)
-    registry.install(name, repo=repo, branch=branch, kind=kind, source_path=source_path)
-    click.echo(f"Installed {name!r} ({kind}) from {repo}@{branch}:{source_path}")
+    registry, _, zhar_root = stack_helpers(ctx)
+    bucket_kwargs: dict[str, Path] = {}
+    if cache_dir is not None:
+        bucket_kwargs["cache_dir"] = Path(cache_dir)
+    bucket_manager = BucketManager(**bucket_kwargs)
+
+    try:
+        try:
+            bucket_manager.path_for(repo, branch=branch)
+        except FileNotFoundError:
+            bucket_manager.add(repo, branch=branch)
+
+        resolved = resolve_cached_stack_source(
+            bucket_manager,
+            source_path if source_path is not None else name,
+            repo=repo,
+            branch=branch,
+            kind=kind,
+        )
+    except (FileNotFoundError, KeyError) as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    registry = StackRegistry(zhar_root / "cfg" / "stack.json")
+    registry.install(name, repo=repo, branch=branch, kind=kind, source_path=resolved.source_path)
+    click.echo(f"Installed {name!r} ({kind}) from {repo}@{branch}:{resolved.source_path}")
 
 
 @stack_group.command("uninstall")
@@ -136,7 +165,7 @@ def stack_list(ctx: click.Context) -> None:
     "--fuzzy-conf",
     type=click.FloatRange(0.0, 1.0),
     default=None,
-    help="Minimum fuzzy-match confidence to resolve the top-scoring installed item when no exact name exists.",
+    help="Minimum fuzzy-match confidence to resolve the top-scoring cached source when no exact name exists.",
 )
 @click.pass_context
 def stack_fetch_command(

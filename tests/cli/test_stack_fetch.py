@@ -37,6 +37,14 @@ def _write_bucket_file(cache_root: Path, repo: str, branch: str, rel_path: str, 
     index_path.write_text(json.dumps(index, indent=2), encoding="utf-8")
 
 
+def _read_stack_registry(zhar_root: Path) -> dict[str, dict[str, str]]:
+    """Read the stack registry fixture under *zhar_root*."""
+    registry_path = zhar_root / "cfg" / "stack.json"
+    if not registry_path.exists():
+        return {}
+    return json.loads(registry_path.read_text(encoding="utf-8"))
+
+
 class TestStackFetch:
     """Validate workspace-ready rendering for `zhar stack fetch`."""
 
@@ -147,3 +155,64 @@ class TestStackFetch:
 
         assert result.exit_code != 0
         assert "No cached stack sources found. Run: zhar stack bucket add <repo>" in result.output
+
+
+class TestStackInstall:
+    """Validate auto-resolution for `zhar stack install`."""
+
+    def test_stack_install_auto_resolves_cached_skill_source(self, tmp_path: Path) -> None:
+        """`stack install` should infer the cached skill source path from NAME and KIND."""
+        runner = CliRunner()
+        zhar_root = _init_project(runner, tmp_path)
+        cache = tmp_path / "cache"
+        _write_bucket_file(cache, "org/repo", "main", ".github/skills/cline-memory-bank/SKILL.md", "skill body\n")
+
+        result = runner.invoke(
+            cli,
+            [
+                "--root",
+                str(zhar_root),
+                "stack",
+                "install",
+                "cline-memory-bank",
+                "org/repo",
+                "--kind",
+                "skill",
+                "--cache-dir",
+                str(cache),
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        assert ".github/skills/cline-memory-bank/SKILL.md" in result.output
+        registry = _read_stack_registry(zhar_root)
+        assert registry["cline-memory-bank"]["source_path"] == ".github/skills/cline-memory-bank/SKILL.md"
+
+    def test_stack_install_explicit_source_uses_same_cached_resolution(self, tmp_path: Path) -> None:
+        """`stack install --source` should validate explicit paths against cached sources."""
+        runner = CliRunner()
+        zhar_root = _init_project(runner, tmp_path)
+        cache = tmp_path / "cache"
+        _write_bucket_file(cache, "org/repo", "main", ".github/skills/cline-memory-bank/SKILL.md", "skill body\n")
+
+        result = runner.invoke(
+            cli,
+            [
+                "--root",
+                str(zhar_root),
+                "stack",
+                "install",
+                "memory-bank",
+                "org/repo",
+                "--kind",
+                "skill",
+                "--source",
+                ".github/skills/cline-memory-bank/SKILL.md",
+                "--cache-dir",
+                str(cache),
+            ],
+        )
+
+        assert result.exit_code == 0, result.output
+        registry = _read_stack_registry(zhar_root)
+        assert registry["memory-bank"]["source_path"] == ".github/skills/cline-memory-bank/SKILL.md"
