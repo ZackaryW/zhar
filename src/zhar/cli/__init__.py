@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import click
 
+from zhar.cli.agents import register_agent_commands
 from zhar.cli.facts import register_facts_commands
 from zhar.cli.install import register_install_commands
 from zhar.cli.memory import register_memory_commands
@@ -32,6 +33,7 @@ class CategorizedGroup(click.Group):
             "facts",
         ),
         "Agent Commands": (
+            "agent",
             "install",
             "uninstall",
         ),
@@ -85,3 +87,4 @@ register_memory_commands(cli)
 register_facts_commands(cli)
 register_install_commands(cli)
 register_stack_commands(cli)
+register_agent_commands(cli)

@@ -3,7 +3,7 @@
     "id": "c3b0",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/node.py — added content: str | None field between source and _metadata",
+    "summary": "src/zhar/mem/node.py \u2014 added content: str | None field between source and _metadata",
     "status": "active",
     "tags": [
       "node",
@@ -24,7 +24,7 @@
     "id": "b61f",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/group.py — added memory_backed: bool = False to NodeTypeDef",
+    "summary": "src/zhar/mem/group.py \u2014 added memory_backed: bool = False to NodeTypeDef",
     "status": "active",
     "tags": [
       "group",
@@ -45,7 +45,7 @@
     "id": "4e64",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/backends/json_backend.py — rewritten to use orjson always + MtimeFileCache",
+    "summary": "src/zhar/mem/backends/json_backend.py \u2014 rewritten to use orjson always + MtimeFileCache",
     "status": "active",
     "tags": [
       "backend",
@@ -67,7 +67,7 @@
     "id": "b7e2",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/utils/cache.py — MtimeFileCache with read_text+read_bytes sharing one entry per path",
+    "summary": "src/zhar/utils/cache.py \u2014 MtimeFileCache with read_text+read_bytes sharing one entry per path",
     "status": "active",
     "tags": [
       "cache"
@@ -87,7 +87,7 @@
     "id": "4f8b",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/store.py — MemStore coordinator: group load, per-group JsonBackend, MemIndex, singleton+memory_backed enforcement",
+    "summary": "src/zhar/mem/store.py \u2014 MemStore coordinator: group load, per-group JsonBackend, MemIndex, singleton+memory_backed enforcement",
     "status": "active",
     "tags": [
       "store",
@@ -108,7 +108,7 @@
     "id": "db71",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/cli.py — Click CLI: init, add (--meta/--tag/--source/--content), note, show, query, status",
+    "summary": "src/zhar/cli.py \u2014 Click CLI: init, add (--meta/--tag/--source/--content), note, show, query, status",
     "status": "active",
     "tags": [
       "cli"
@@ -128,7 +128,7 @@
     "id": "b25f",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/utils/facts.py — independent KV store (orjson, string-only values, persist-on-mutation)",
+    "summary": "src/zhar/utils/facts.py \u2014 independent KV store (orjson, string-only values, persist-on-mutation)",
     "status": "active",
     "tags": [
       "facts"
@@ -148,7 +148,7 @@
     "id": "c67b",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/scan.py — %ZHAR:<id>% marker parser, scan_file/scan_tree/sync_sources",
+    "summary": "src/zhar/mem/scan.py \u2014 %ZHAR:<id>% marker parser, scan_file/scan_tree/sync_sources",
     "status": "active",
     "tags": [
       "scan"
@@ -168,7 +168,7 @@
     "id": "fdb3",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/export.py — export_text/export_group compact renderer for agent context injection",
+    "summary": "src/zhar/mem/export.py \u2014 export_text/export_group compact renderer for agent context injection",
     "status": "active",
     "tags": [
       "export"
@@ -188,7 +188,7 @@
     "id": "b9b3",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/gc.py — run_gc: delete expired, archive resolved known_issues, dry_run support",
+    "summary": "src/zhar/mem/gc.py \u2014 run_gc: delete expired, archive resolved known_issues, dry_run support",
     "status": "active",
     "tags": [
       "gc"
@@ -208,7 +208,7 @@
     "id": "2b1c",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/mem/verify.py — run_verify: MISSING_SINGLETON, MISSING_CONTENT, BROKEN_SOURCE",
+    "summary": "src/zhar/mem/verify.py \u2014 run_verify: MISSING_SINGLETON, MISSING_CONTENT, BROKEN_SOURCE",
     "status": "active",
     "tags": [
       "verify"
@@ -228,7 +228,7 @@
     "id": "530d",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/installer.py — install_agent_file renders facts + memory snapshot to agent md",
+    "summary": "src/zhar/harness/installer.py \u2014 install_agent_file renders facts + memory snapshot to agent md",
     "status": "active",
     "tags": [
       "harness"
@@ -248,10 +248,10 @@
     "id": "da1b",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/template.py — recursive descent parser + renderer for stack template language",
+    "summary": "src/zhar/parser/ \u2014 recursive descent parser + renderer for %%ZHAR.*%% template language",
     "status": "active",
     "tags": [],
-    "source": "src/zhar/stack/template.py::2::%ZHAR:da1b%",
+    "source": null,
     "content": null,
     "created_at": "2026-04-13T22:38:28Z",
     "updated_at": "2026-04-13T23:29:34Z",
@@ -265,7 +265,7 @@
     "id": "6f2b",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/bucket.py — BucketManager wrapping GhCacheDir at ~/.zhar/stack/",
+    "summary": "src/zhar/harness/stack/bucket.py \u2014 BucketManager wrapping GhCacheDir at ~/.zhar/stack/",
     "status": "active",
     "tags": [],
     "source": "src/zhar/stack/bucket.py::16::%ZHAR:6f2b%",
@@ -282,7 +282,7 @@
     "id": "687d",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/registry.py — StackRegistry read/write .zhar/cfg/stack.json",
+    "summary": "src/zhar/harness/stack/registry.py \u2014 StackRegistry read/write .zhar/cfg/stack.json",
     "status": "active",
     "tags": [],
     "source": "src/zhar/stack/registry.py::6::%ZHAR:687d%",
@@ -299,7 +299,7 @@
     "id": "238d",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/sync.py — sync_stack renders templates against facts+memory to .github/",
+    "summary": "src/zhar/harness/stack/sync.py \u2014 sync_stack renders templates against facts+memory to .github/",
     "status": "active",
     "tags": [],
     "source": "src/zhar/stack/sync.py::2::%ZHAR:238d%",
@@ -316,7 +316,7 @@
     "id": "4aa6",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/__init__.py — stack package init",
+    "summary": "src/zhar/harness/stack/__init__.py \u2014 stack package init",
     "status": "active",
     "tags": [],
     "source": "src/zhar/stack/__init__.py::2::%ZHAR:4aa6%",
@@ -333,7 +333,7 @@
     "id": "7e64",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/cli.py — stack bucket/install/uninstall/list/sync subcommands wired up",
+    "summary": "src/zhar/cli.py \u2014 stack bucket/install/uninstall/list/sync subcommands wired up",
     "status": "active",
     "tags": [],
     "source": "src/zhar/cli/stack.py::18::%ZHAR:7e64%",

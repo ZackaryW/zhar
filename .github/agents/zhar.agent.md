@@ -10,7 +10,7 @@ You are the zhar memory maintenance specialist. Your job is to keep zhar-backed 
 
 ## Scope
 - Use this agent when touching `.zhar/mem/*.json`, `.zhar/facts.json`, `.zhar/cfg/stack.json`, `%ZHAR:<id>%` source markers, workspace hooks or agent files that govern zhar workflows, or any `zhar` CLI command.
-- Treat the model described in this file as authoritative unless the user provides stricter project-specific rules.
+- Treat the model described in this file as the default zhar authority across workspaces. If the current task, workspace, or user prompt provides stricter or more specific zhar guidance, consult that first and use this file as fallback behavior.
 - Run `zhar` through the launcher available in the environment. Valid examples include `zhar ...`, `uv run zhar ...`, `uvx zhar ...`, or `pipx run zhar ...`.
 - When editing code, give every class and function a docstring stating its purpose and scope.
 

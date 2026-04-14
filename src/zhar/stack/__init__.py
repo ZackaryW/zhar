@@ -4,7 +4,7 @@
 from zhar.stack.bucket import BucketManager
 from zhar.stack.registry import StackRegistry
 from zhar.stack.sync import SyncResult, sync_stack
-from zhar.stack.template import TemplateContext, TemplateError, render_template
+from zhar.parser import TemplateContext, TemplateError, render_template
 
 __all__ = [
     "BucketManager",

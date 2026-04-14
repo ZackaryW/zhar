@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from zhar.stack.template import TemplateContext, render_template
+from zhar.parser import TemplateContext, render_template
 
 if TYPE_CHECKING:
     from zhar.stack.bucket import BucketManager
@@ -82,6 +82,9 @@ def sync_stack(
                 groups=context.groups,
                 chunk_resolver=_make_resolver(repo_root),
                 base_dir=repo_root,
+                # Skills eagerly expand nested RSKILL tokens; all other kinds
+                # leave them verbatim for runtime resolution via `zhar agent get`
+                expand_skills=(kind == "skill"),
             )
             rendered = render_template(source_file.read_text(encoding="utf-8"), item_ctx)
 

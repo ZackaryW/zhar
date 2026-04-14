@@ -248,10 +248,10 @@
     "id": "da1b",
     "group": "code_history",
     "node_type": "file_change",
-    "summary": "src/zhar/harness/stack/template.py — recursive descent parser + renderer for stack template language",
+    "summary": "src/zhar/parser/ — recursive descent parser + renderer for %%ZHAR.*%% template language",
     "status": "active",
     "tags": [],
-    "source": "src/zhar/stack/template.py::2::%ZHAR:da1b%",
+    "source": null,
     "content": null,
     "created_at": "2026-04-13T22:38:28Z",
     "updated_at": "2026-04-13T23:29:34Z",
@@ -419,6 +419,114 @@
     "metadata": {
       "agent": "copilot",
       "path": "tests/migration/test_zmem_migrate.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "1efbf": {
+    "id": "1efbf",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/parser/__init__.py — public re-exports: ParseContext, ParseError, render, render_template, TemplateContext alias",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/parser/__init__.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "1f54f": {
+    "id": "1f54f",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/parser/cond.py — condition evaluator: eval_expr (and/or/not/in/_ver), eval_condition_groups (FACT/ORFACT chaining)",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/parser/cond.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "20aee": {
+    "id": "20aee",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/parser/render.py — renderer: ParseContext with expand_skills flag, render(), RSKILL lazy/eager, RCHUNK always expands",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/parser/render.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "217d3": {
+    "id": "217d3",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/cli/agents.py — agent command group: agent get <name> renders from bucket source with live facts, expand_skills=False",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/cli/agents.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "22a37": {
+    "id": "22a37",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/stack/bucket.py — BucketManager path_for/list_repos/remove now use local index.json directly (no zuu needed for read ops)",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/stack/bucket.py",
+      "significance": "refactor"
+    },
+    "custom": {}
+  },
+  "23b76": {
+    "id": "23b76",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "src/zhar/stack/sync.py — sync_stack passes expand_skills=(kind==\"skill\") to ParseContext",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-14T17:22:32Z",
+    "updated_at": "2026-04-14T17:22:32Z",
+    "expires_at": null,
+    "metadata": {
+      "path": "src/zhar/stack/sync.py",
       "significance": "feature"
     },
     "custom": {}

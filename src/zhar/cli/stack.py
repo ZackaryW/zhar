@@ -11,7 +11,7 @@ from zhar.mem.query import Query
 from zhar.stack.bucket import BucketManager
 from zhar.stack.registry import StackRegistry
 from zhar.stack.sync import sync_stack
-from zhar.stack.template import TemplateContext
+from zhar.parser import TemplateContext
 from zhar.utils.facts import load_effective_facts, project_facts_path
 
 

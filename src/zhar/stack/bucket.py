@@ -38,7 +38,12 @@ _DEFAULT_CACHE_DIR = Path.home() / ".zhar" / "stack"
 
 
 class BucketManager:
-    """Manage a collection of GitHub repo caches for zhar stack."""
+    """Manage a collection of GitHub repo caches for zhar stack.
+
+    ``_gh`` (GhCacheDir or compatible duck-type) is only required for
+    ``add()``.  All read-only operations (``path_for``, ``list_repos``,
+    ``remove``) work from the local index file without importing zuu.
+    """
 
     def __init__(
         self,
@@ -48,15 +53,42 @@ class BucketManager:
     ) -> None:
         self.cache_dir: Path = Path(cache_dir) if cache_dir is not None else _DEFAULT_CACHE_DIR
         self.cache_dir.mkdir(parents=True, exist_ok=True)
-        self._gh = _gh if _gh is not None else _make_gh_cache_dir(self.cache_dir)
+        # _gh is stored but NOT eagerly created; it is only instantiated inside
+        # add() so that path_for/list_repos/remove work without zuu installed.
+        self._gh_override = _gh  # None means "create lazily from zuu when needed"
+
+    def _gh_instance(self) -> Any:
+        """Return the GhCacheDir instance, creating it from zuu if needed."""
+        if self._gh_override is not None:
+            return self._gh_override
+        return _make_gh_cache_dir(self.cache_dir)
 
     def add(self, repo: str, branch: str = "main") -> Path:
-        """Ensure *repo* at *branch* is cached and return the local root path."""
-        return self._gh.ensure(repo, branch)
+        """Ensure *repo* at *branch* is cached and return the local root path.
+
+        This is the only method that requires zuu / network access.
+        """
+        return self._gh_instance().ensure(repo, branch)
 
     def path_for(self, repo: str, branch: str | None = None) -> Path:
-        """Return the cached local path for *repo* without triggering a pull."""
-        return self._gh.resolve_cached_repo_path(repo, branch)
+        """Return the cached local path for *repo* without triggering a pull.
+
+        Reads the local index only — does not require zuu.
+        """
+        index = self._read_index()
+        for folder_name, entry in index.items():
+            repo_val = entry.get("repository") or entry.get("repo", "")
+            branch_val = entry.get("branch")
+            if repo_val != repo:
+                continue
+            if branch is not None and branch_val != branch:
+                continue
+            cache_path = self.cache_dir / folder_name
+            if cache_path.exists():
+                return cache_path
+        raise FileNotFoundError(
+            f"No cached repository matched repo={repo!r} branch={branch!r}"
+        )
 
     def list_repos(self) -> list[dict[str, Any]]:
         """Return metadata for every entry in the cache index."""

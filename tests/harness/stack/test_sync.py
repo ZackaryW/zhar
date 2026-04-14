@@ -37,7 +37,7 @@ import pytest
 
 from zhar.stack.registry import StackRegistry
 from zhar.stack.sync import SyncResult, sync_stack
-from zhar.stack.template import TemplateContext
+from zhar.parser import TemplateContext
 
 
 # ── helpers / fixtures ────────────────────────────────────────────────────────
@@ -214,6 +214,69 @@ class TestSyncRender:
 
         assert len(result.synced) == 2
         assert result.errors == []
+
+
+# ── RSKILL lazy (agent/instruction/hook) vs eager (skill) ────────────────────
+
+class TestRSkillResolution:
+    SKILL_TOKEN = "%%ZHAR.RSKILL(cool-skill)%%"
+    SKILL_SRC = "%%ZHAR.RSKILL(cool-skill)%%\n"
+    SKILL_CONTENT = "skill body content\n"
+
+    def _bm(self, tmp_path, kind, source_template):
+        """Build a FakeBucketManager with both the item source and the skill file."""
+        return FakeBucketManager(tmp_path / "cache", {
+            f"org/repo::main::items/item.md": source_template,
+            f"org/repo::main::cool-skill": self.SKILL_CONTENT,
+        })
+
+    def test_agent_rskill_left_verbatim(self, reg, output_dir, tmp_path):
+        """Syncing an agent keeps %%ZHAR.RSKILL%% tokens verbatim."""
+        bm = self._bm(tmp_path, "agent", self.SKILL_SRC)
+        reg.install("myagent", repo="org/repo", branch="main",
+                    kind="agent", source_path="items/item.md")
+
+        sync_stack(reg, bm, simple_ctx(), output_dir)
+
+        out = (output_dir / "myagent.agent.md").read_text()
+        assert self.SKILL_TOKEN in out
+        assert self.SKILL_CONTENT.strip() not in out
+
+    def test_instruction_rskill_left_verbatim(self, reg, output_dir, tmp_path):
+        """Syncing an instruction keeps %%ZHAR.RSKILL%% tokens verbatim."""
+        bm = self._bm(tmp_path, "instruction", self.SKILL_SRC)
+        reg.install("instr", repo="org/repo", branch="main",
+                    kind="instruction", source_path="items/item.md")
+
+        sync_stack(reg, bm, simple_ctx(), output_dir)
+
+        out = (output_dir / "instr.instructions.md").read_text()
+        assert self.SKILL_TOKEN in out
+        assert self.SKILL_CONTENT.strip() not in out
+
+    def test_hook_rskill_left_verbatim(self, reg, output_dir, tmp_path):
+        """Syncing a hook keeps %%ZHAR.RSKILL%% tokens verbatim."""
+        bm = self._bm(tmp_path, "hook", self.SKILL_SRC)
+        reg.install("myhook", repo="org/repo", branch="main",
+                    kind="hook", source_path="items/item.md")
+
+        sync_stack(reg, bm, simple_ctx(), output_dir)
+
+        out = (output_dir / "myhook.hook.md").read_text()
+        assert self.SKILL_TOKEN in out
+        assert self.SKILL_CONTENT.strip() not in out
+
+    def test_skill_rskill_expanded_inline(self, reg, output_dir, tmp_path):
+        """Syncing a skill expands nested %%ZHAR.RSKILL%% tokens eagerly."""
+        bm = self._bm(tmp_path, "skill", self.SKILL_SRC)
+        reg.install("myskill", repo="org/repo", branch="main",
+                    kind="skill", source_path="items/item.md")
+
+        sync_stack(reg, bm, simple_ctx(), output_dir)
+
+        out = (output_dir / "myskill.skill.md").read_text()
+        assert self.SKILL_TOKEN not in out
+        assert self.SKILL_CONTENT.strip() in out
 
 
 # ── dry_run ───────────────────────────────────────────────────────────────────
