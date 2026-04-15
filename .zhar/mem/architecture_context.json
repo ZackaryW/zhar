@@ -28,9 +28,43 @@
     "status": "active",
     "tags": [],
     "source": null,
-    "content": "## Context\n\nRecent export/show relation-depth work changed the effective architecture semantics of architecture_context, not just CLI file history.\n\n## Current rule\n\nRelation expansion currently traverses only architecture_context/component_rel nodes through shared from_component / to_component endpoints.\n\n## Constraint\n\nBroader traversal across other node types requires a shared component identity in their metadata. Without that anchor, relation expansion cannot safely connect non-relation nodes into the same component neighborhood.\n\n## Implication\n\nChanges to relation traversal behavior should be recorded in architecture_context first, with code_history used only as supplemental file-level breadcrumbing.",
+    "content": "## Context\n\nRecent export and show relation-depth work changed the effective architecture semantics of architecture_context, not just CLI file history.\n\n## Current rule\n\nNamespace-scoped traversal for export and show currently starts from the seed set and traverses only architecture_context/component_rel nodes through shared from_component / to_component endpoints.\n\n## Boundary rule\n\nExpanded nodes stay inside the active tag boundary of the seed selection. Traversal does not cross into differently tagged relation nodes.\n\n## Constraint\n\nBroader traversal across other node types requires a shared component identity in their metadata. Without that anchor, relation expansion cannot safely connect non-relation nodes into the same component neighborhood.\n\n## Implication\n\nChanges to namespacing or relation traversal behavior should be recorded in architecture_context first, with code_history used only as supplemental file-level breadcrumbing.",
     "created_at": "2026-04-15T18:08:22Z",
-    "updated_at": "2026-04-15T18:08:22Z",
+    "updated_at": "2026-04-15T18:12:14Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "38680": {
+    "id": "38680",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory mutation workflow supports literal bodies, stdin/env input, and attached supplemental notes",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Scope\n\nThis workflow covers durable memory mutations performed through the CLI rather than file-level implementation details.\n\n## Mutation inputs\n\nUse literal body text, stdin, or --from-env when setting content on memory-backed nodes.\n\n## Supplemental notes\n\nUse add-note to attach extra detail to primary records when the detail should stay out of normal exports.\n\n## Boundary\n\nThis workflow is semantically about how operators add and enrich memory records, so it belongs in architecture_context as operational context, with code_history only as a supplemental breadcrumb.",
+    "created_at": "2026-04-15T18:14:43Z",
+    "updated_at": "2026-04-15T18:14:43Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "393df": {
+    "id": "393df",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory maintenance workflow uses show/query/export confirmation plus scan, verify, and gc at the right choke points",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Confirmation\n\nAfter a mutation, confirm resulting state with show, query, or export depending on whether you need node-level, filtered, or snapshot-level visibility.\n\n## Validation\n\nUse scan after marker edits, verify after structural changes, and gc at commit or cleanup choke points.\n\n## Intent\n\nThese are operational semantics for maintaining trustworthy memory state, not just file-level implementation details.\n\n## Boundary\n\nThis workflow belongs in architecture_context as technical operating context and should exist independently of any specific code_history file breadcrumb.",
+    "created_at": "2026-04-15T18:14:44Z",
+    "updated_at": "2026-04-15T18:14:44Z",
     "expires_at": null,
     "metadata": {
       "agent": "copilot"

@@ -133,6 +133,55 @@ These node types must carry markdown content:
 - Add `code_history/file_change` only when the file-level breadcrumb is independently useful after the semantic record exists.
 - Do not let repeated CLI or implementation work default into `code_history` when the durable takeaway is really a change in memory semantics or architectural behavior.
 
+## Priority Workflow Graph
+
+Default owner-first routing order for standard project policies:
+
+```text
+Start
+ |
+ +-- Goal, requirement, audience, or product constraint?
+ |     -> project_dna
+ |
+ +-- Active bug, blocker, operational failure, or unresolved risk?
+ |     -> problem_tracking
+ |
+ +-- Architecture, runtime model, data contract, traversal rule, group/node semantics,
+ |   component relationships, or technical operating context?
+ |     -> architecture_context
+ |
+ +-- Decision, tradeoff, rationale, routing rule, research result, or lesson learned?
+ |     -> decision_trail
+ |
+ +-- File/function/breaking breadcrumb that remains useful after the semantic
+ |   record already exists?
+ |     -> code_history
+ |
+ +-- Extra detail attached to a primary record?
+	 -> notes
+```
+
+Priority rule:
+
+- If multiple branches apply, create the highest-priority semantic record first, then add lower-priority supplemental records only when they remain independently useful.
+- `code_history` should usually be last in the routing order, not the first stop.
+
+Customization rule:
+
+- Repositories may customize this graph by editing the repo-local instruction, but the default should remain owner-first and `code_history`-last unless the project has a stronger policy.
+- When customizing, prefer adding or reordering semantic branches instead of weakening the requirement to create an owning semantic record.
+
+Examples:
+
+| Change shape | Primary group | Optional supplemental group |
+|---|---|---|
+| Goal or non-negotiable requirement update | `project_dna` | `code_history` |
+| Runtime traversal or relationship semantics change | `architecture_context` | `code_history` |
+| Workflow routing rule or durable rationale | `decision_trail` | `code_history` |
+| Memory CLI mutation workflow change | `architecture_context` | `code_history` |
+| Active breakage or unresolved regression | `problem_tracking` | `code_history` |
+| File breadcrumb after semantic owner already exists | `code_history` | `notes` |
+
 ## Source Markers
 
 - Marker format is `%ZHAR:<hex-id>%`.

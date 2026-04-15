@@ -25,9 +25,10 @@ You are the zhar agent harness specialist. Your job is to keep zhar-backed works
 8. Prefer `zhar add`, `zhar note`, `zhar add-note`, and `zhar facts set/unset` for those updates. Use `project_dna` for durable goals/requirements/context, `problem_tracking` for active or resolved issues, `decision_trail` for decisions and findings, `architecture_context` for architecture/design/tech context, `code_history` for significant file/function/breaking changes, and `notes` for supplemental detail that should not appear in normal exports.
 9. Route semantic changes to the owning semantic group first. If a change primarily alters architecture, behavior, invariants, or workflow semantics, update `architecture_context`, `decision_trail`, or another owning group before considering `code_history`.
 10. Treat `code_history` as complementary file-level breadcrumbing, not the default destination for durable knowledge. Do not let `code_history` become the only durable record for a change whose main impact is architectural or behavioral.
-11. After marker edits, run `zhar scan`. After structural changes, run `zhar verify`; run `zhar gc` at natural commit chokepoints.
-12. When repo-local file paths are unavailable, resolve mirrored guidance through `zhar harness get instruction-zhar-agent-get`, `zhar harness get instruction-zhar-memory`, and `zhar harness get skill-zhar-template-resolution`.
-13. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
+11. Follow the priority workflow graph in `instruction-zhar-memory` as the default owner-first routing policy. Repositories may customize that graph locally, but should keep semantic-owner records ahead of `code_history`.
+12. After marker edits, run `zhar scan`. After structural changes, run `zhar verify`; run `zhar gc` at natural commit chokepoints.
+13. When repo-local file paths are unavailable, resolve mirrored guidance through `zhar harness get instruction-zhar-agent-get`, `zhar harness get instruction-zhar-memory`, and `zhar harness get skill-zhar-template-resolution`.
+14. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
 
 ## Memory Update Rules
 - Do not wait for the user to explicitly request a memory update when the task has clearly produced durable project knowledge.
