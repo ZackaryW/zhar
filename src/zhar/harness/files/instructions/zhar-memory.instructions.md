@@ -15,9 +15,11 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 ## Safe Mutation Rules
 
 - Use `zhar add <group> <node_type> ...` for new nodes.
+- Use `zhar add ... --content TEXT`, `--from-env NAME`, or `--content-var NAME` to supply a body at creation time.
+- For non-memory-backed node types, `zhar add ... --from-env NAME` and `--content-var NAME` create an attached supplemental `notes/note` record instead of inline node content.
 - Use `zhar set-status <id> <status>` to move an existing node through its valid lifecycle states.
-- Use `zhar note <id> "..."` for a literal body, `zhar note <id> -` to read from stdin, or `zhar note <id> --from-env NAME` to read the body from an environment variable.
-- Use `zhar add-note <target-id> "..."` for supplemental notes that should stay out of normal exports.
+- Use `zhar note <id> "..."` for a literal body, `zhar note <id> -` to read from stdin, or `zhar note <id> --from-env NAME` / `--content-var NAME` to read the body from an environment variable.
+- Use `zhar add-note <target-id> "..."`, `zhar add-note <target-id> -`, or `zhar add-note <target-id> --from-env NAME` / `--content-var NAME` for supplemental notes that should stay out of normal exports.
 - Use `zhar remove <id>` or `zhar prune ...` only when a record is incorrect, duplicate, or intentionally transient; prefer lifecycle status changes when the node should remain in project history.
 - Use `zhar facts set [--scope project|global] <key> <value>` for facts, and `zhar facts unset` instead of hand-editing facts files.
 - Use `zhar scan` after embedding `%ZHAR:<id>%` in source.
@@ -114,6 +116,21 @@ These node types must carry markdown content:
 - `zhar facts list --scope project` reads `.zhar/facts.json` for the current workspace.
 - `zhar facts list --scope global` reads the global user facts store.
 - Project facts override global facts in the effective view.
+- `session_challenge_enabled` controls whether suspicious transient session nodes are reported and whether challenge state is surfaced in session-aware runtime output.
+- `session_challenge_agent` names the review agent surfaced by `zhar session need-challenge` and session-aware runtime exports.
+
+## Session Runtime
+
+- Transient session state is separate from durable `.zhar/` memory and is stored under the OS temp cache at `zhar_cache/session/`.
+- The active session ID comes from `ZHAR_SESSION_ID`; if it is absent, zhar generates one for the current process.
+- Use root-level `--no-session` to disable transient session tracking for one CLI invocation.
+- `zhar show <id>` records session inspection state when tracking is enabled.
+- `zhar show <id> --relation-depth N` records expanded inspection when `N > 0`, which is distinct from a shallow show event.
+- Use `zhar session list` to inspect visible transient sessions, prioritized to the current project and cwd.
+- Use `zhar session adopt <session-id>` to set `ZHAR_SESSION_ID` for the current process.
+- Use `zhar session current` to inspect the active session; `zhar session current --format json` returns the same runtime state in structured form.
+- Use `zhar session clear` to delete the current transient session file.
+- Use `zhar session need-challenge` to print suspicious node IDs only when challenge reporting is enabled by facts.
 
 ## Query and Export
 
@@ -126,6 +143,9 @@ These node types must carry markdown content:
 - `zhar export --relation-depth N` preserves the active tag and status boundary for expanded nodes; it does not cross into differently tagged relation nodes.
 - Relation-depth expansion is currently limited to `architecture_context/component_rel` adjacency through shared `from_component` / `to_component` endpoints.
 - Use `zhar export --with-runtime-context` when you want group-defined runtime context blocks included in the output.
+- Group runtime context is complementary live data gathered at export time. It does not mutate durable memory and does not replace the stored node set.
+- When transient session state exists, `zhar export --with-runtime-context` also appends a `Session state` block with `session_id`, shown and suspicious counts, `challenge_enabled`, optional `challenge_agent`, and per-node score lines.
+- `zhar export --format json --with-runtime-context` returns the same runtime information under a structured `runtime_context` payload, including any session state.
 
 ## Memory Routing Heuristic
 
