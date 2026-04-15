@@ -119,6 +119,10 @@ These node types must carry markdown content:
 - `zhar query` defaults to all non-`notes` groups unless you pass explicit group/type filters.
 - Use `zhar query --note-depth N` to include attached supplemental notes under matching primary nodes.
 - `zhar export` omits the `notes` group by default and exports only each node type's current statuses when `--status` is not provided.
+- Use `zhar export --tag TAG` when you need a namespace- or project-scoped snapshot; repeated `--tag` options are AND-combined.
+- Use `zhar export --relation-depth N` to expand adjacent `architecture_context/component_rel` nodes from the exported seed set.
+- `zhar export --relation-depth N` preserves the active tag and status boundary for expanded nodes; it does not cross into differently tagged relation nodes.
+- Relation-depth expansion is currently limited to `architecture_context/component_rel` adjacency through shared `from_component` / `to_component` endpoints.
 - Use `zhar export --with-runtime-context` when you want group-defined runtime context blocks included in the output.
 
 ## Source Markers

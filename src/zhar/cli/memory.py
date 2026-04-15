@@ -440,6 +440,8 @@ def scan_command(ctx: click.Context, path: str, ext: tuple[str, ...], dry_run: b
 @click.command(name="export")
 @click.option("--group", "group", multiple=True, metavar="NAME", help="Limit to specific groups (repeatable).")
 @click.option("--status", multiple=True, metavar="STATUS", help="Limit to specific statuses (default: all).")
+@click.option("--tag", "tag", multiple=True, metavar="TAG", help="Node must have all listed tags (repeatable).")
+@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
 @click.option("--with-runtime-context/--no-runtime-context", default=False, help="Include runtime context gathered from group-defined tools.")
 @click.option("--out", default=None, type=click.Path(), metavar="FILE", help="Write output to FILE instead of stdout.")
 @click.pass_context
@@ -447,6 +449,8 @@ def export_command(
     ctx: click.Context,
     group: tuple[str, ...],
     status: tuple[str, ...],
+    tag: tuple[str, ...],
+    relation_depth: int,
     with_runtime_context: bool,
     out: str | None,
 ) -> None:
@@ -456,6 +460,8 @@ def export_command(
         store,
         groups=list(group) or None,
         statuses=list(status) or None,
+        tags=list(tag) or None,
+        relation_depth=relation_depth,
         include_runtime_context=with_runtime_context,
         project_root=zhar_root.parent,
     )

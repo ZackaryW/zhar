@@ -108,6 +108,28 @@ class TestExportGroup:
         assert "Accepted ADR" not in out
         assert "Proposed ADR" in out
 
+    def test_tags_filter_limits_group_export_to_matching_nodes(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Web requirement",
+            tags=["project:web"],
+            content="## Why\n\nWeb only.",
+        ))
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="API requirement",
+            tags=["project:api"],
+            content="## Why\n\nAPI only.",
+        ))
+
+        out = export_group(store, "project_dna", tags=["project:web"])
+
+        assert "Web requirement" in out
+        assert "API requirement" not in out
+
     def test_hides_redundant_file_change_path_when_source_present(self, tmp_path):
         store = MemStore(tmp_path / ".zhar")
         store.save(make_node(
@@ -178,6 +200,76 @@ class TestExportGroup:
         assert "## code_history (15)" in out
         assert out.count("file_change ·") == 15
 
+    def test_relation_depth_expands_adjacent_component_rel_nodes(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="web -> api",
+            tags=["project:web"],
+            metadata={
+                "from_component": "web",
+                "to_component": "api",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> db",
+            tags=["project:web"],
+            metadata={
+                "from_component": "api",
+                "to_component": "db",
+                "rel_type": "calls",
+            },
+        ))
+
+        out = export_group(
+            store,
+            "architecture_context",
+            tags=["project:web"],
+            relation_depth=1,
+        )
+
+        assert "web -> api" in out
+        assert "api -> db" in out
+
+    def test_relation_depth_respects_tag_boundary_for_connected_rel_nodes(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="web -> api",
+            tags=["project:web"],
+            metadata={
+                "from_component": "web",
+                "to_component": "api",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> shared-db",
+            tags=["project:api"],
+            metadata={
+                "from_component": "api",
+                "to_component": "shared-db",
+                "rel_type": "calls",
+            },
+        ))
+
+        out = export_group(
+            store,
+            "architecture_context",
+            tags=["project:web"],
+            relation_depth=2,
+        )
+
+        assert "web -> api" in out
+        assert "api -> shared-db" not in out
+
 
 # ── export_text ───────────────────────────────────────────────────────────────
 
@@ -215,6 +307,72 @@ class TestExportText:
         out = export_text(store, groups=["project_dna"])
         assert "Build zhar" in out
         assert "OOM on scan" not in out
+
+    def test_tags_filter_limits_export_to_matching_nodes(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Web requirement",
+            tags=["project:web"],
+            content="## Why\n\nWeb only.",
+        ))
+        store.save(make_node(
+            group="problem_tracking",
+            node_type="known_issue",
+            summary="API issue",
+            tags=["project:api"],
+            content="## Details\n\nAPI only.",
+        ))
+
+        out = export_text(store, tags=["project:web"])
+
+        assert "Web requirement" in out
+        assert "API issue" not in out
+
+    def test_tags_filter_can_produce_empty_export(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Web requirement",
+            tags=["project:web"],
+            content="## Why\n\nWeb only.",
+        ))
+
+        out = export_text(store, tags=["project:api"])
+
+        assert out == "# zhar memory — 0 nodes\n"
+
+    def test_relation_depth_expands_component_rel_nodes_in_full_export(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="web -> api",
+            tags=["project:web"],
+            metadata={
+                "from_component": "web",
+                "to_component": "api",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> db",
+            tags=["project:web"],
+            metadata={
+                "from_component": "api",
+                "to_component": "db",
+                "rel_type": "calls",
+            },
+        ))
+
+        out = export_text(store, tags=["project:web"], relation_depth=1)
+
+        assert "web -> api" in out
+        assert "api -> db" in out
 
     def test_includes_header_with_node_count(self, store):
         out = export_text(store)

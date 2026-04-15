@@ -8,6 +8,7 @@ from click.testing import CliRunner
 
 from zhar.cli import cli
 from zhar.mem.export import export_text
+from zhar.mem.node import make_node
 from zhar.mem.query import Query
 from zhar.mem.store import MemStore
 from zhar.mem.verify import run_verify
@@ -115,3 +116,96 @@ def test_export_and_verify_match_the_copied_fixture() -> None:
 
     assert issue_codes == {"MISSING_CONTENT"}
     assert missing_content_ids == _EXPECTED_MISSING_CONTENT_IDS
+
+
+def test_cli_export_applies_tag_namespace_and_relation_depth_end_to_end(tmp_path) -> None:
+    """CLI export should expand connected relation nodes without crossing tag boundaries."""
+    runner = CliRunner()
+    store = MemStore(tmp_path / ".zhar")
+
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="web -> api",
+        tags=["project:web"],
+        metadata={
+            "from_component": "web",
+            "to_component": "api",
+            "rel_type": "calls",
+        },
+    ))
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="api -> db",
+        tags=["project:web"],
+        metadata={
+            "from_component": "api",
+            "to_component": "db",
+            "rel_type": "calls",
+        },
+    ))
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="api -> shared-db",
+        tags=["project:api"],
+        metadata={
+            "from_component": "api",
+            "to_component": "shared-db",
+            "rel_type": "calls",
+        },
+    ))
+
+    result = runner.invoke(cli, [
+        "--root", str(store.root), "export",
+        "--group", "architecture_context",
+        "--tag", "project:web",
+        "--relation-depth", "1",
+    ])
+
+    assert result.exit_code == 0, result.output
+    assert "web -> api" in result.output
+    assert "api -> db" in result.output
+    assert "api -> shared-db" not in result.output
+
+
+def test_export_text_applies_namespace_before_relation_expansion_end_to_end(tmp_path) -> None:
+    """Direct export should keep expansion inside the active namespace boundary."""
+    store = MemStore(tmp_path / ".zhar")
+
+    store.save(make_node(
+        group="project_dna",
+        node_type="core_requirement",
+        summary="Web requirement",
+        tags=["project:web"],
+        content="## Why\n\nWeb only.",
+    ))
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="web -> api",
+        tags=["project:web"],
+        metadata={
+            "from_component": "web",
+            "to_component": "api",
+            "rel_type": "calls",
+        },
+    ))
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="api -> shared-db",
+        tags=["project:api"],
+        metadata={
+            "from_component": "api",
+            "to_component": "shared-db",
+            "rel_type": "calls",
+        },
+    ))
+
+    exported = export_text(store, tags=["project:web"], relation_depth=2, project_root=tmp_path)
+
+    assert "Web requirement" in exported
+    assert "web -> api" in exported
+    assert "api -> shared-db" not in exported

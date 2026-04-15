@@ -1,0 +1,20 @@
+{
+  "32ab7": {
+    "id": "32ab7",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "Adds relation-depth expansion for architecture_context/component_rel export traversal while preserving the active tag boundary for all expanded nodes.",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Adds relation-depth expansion for architecture_context/component_rel export traversal while preserving the active tag boundary for all expanded nodes.",
+    "created_at": "2026-04-15T17:57:25Z",
+    "updated_at": "2026-04-15T17:57:25Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "3137a"
+    },
+    "custom": {}
+  }
+}

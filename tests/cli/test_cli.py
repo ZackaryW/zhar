@@ -673,6 +673,74 @@ class TestExport:
         assert "Base requirement" in result.output
         assert "Imported note" not in result.output
 
+    def test_export_can_filter_by_tag(self, project, runner):
+        runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Web requirement",
+            "--tag", "project:web",
+            "--content", "## Why\n\nWeb only.",
+        ])
+        runner.invoke(cli, [
+            "--root", str(project), "add",
+            "problem_tracking", "known_issue", "API issue",
+            "--tag", "project:api",
+            "--content", "## Details\n\nAPI only.",
+        ])
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export", "--tag", "project:web",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "Web requirement" in result.output
+        assert "API issue" not in result.output
+
+    def test_export_can_expand_component_relations_within_tag_namespace(self, project, runner):
+        store = MemStore(project)
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="web -> api",
+            tags=["project:web"],
+            metadata={
+                "from_component": "web",
+                "to_component": "api",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> db",
+            tags=["project:web"],
+            metadata={
+                "from_component": "api",
+                "to_component": "db",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> shared-db",
+            tags=["project:api"],
+            metadata={
+                "from_component": "api",
+                "to_component": "shared-db",
+                "rel_type": "calls",
+            },
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export", "--group", "architecture_context",
+            "--tag", "project:web", "--relation-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "web -> api" in result.output
+        assert "api -> db" in result.output
+        assert "api -> shared-db" not in result.output
+
 
 class TestQueryNotes:
     def test_query_note_depth_zero_hides_attached_notes(self, project, runner):

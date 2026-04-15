@@ -697,5 +697,43 @@
       "significance": "patch"
     },
     "custom": {}
+  },
+  "3137a": {
+    "id": "3137a",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Support tag-filtered export snapshots for namespace-scoped memory injection",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T17:51:17Z",
+    "updated_at": "2026-04-15T17:51:17Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/mem/export.py",
+      "significance": "feature"
+    },
+    "custom": {}
+  },
+  "33d44": {
+    "id": "33d44",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Document tag-scoped export and relation-depth behavior in zhar memory instructions",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T18:00:50Z",
+    "updated_at": "2026-04-15T18:00:50Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": ".github/instructions/zhar-memory.instructions.md",
+      "significance": "patch"
+    },
+    "custom": {}
   }
 }
