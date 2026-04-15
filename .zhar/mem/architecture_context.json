@@ -70,5 +70,39 @@
       "agent": "copilot"
     },
     "custom": {}
+  },
+  "3b6dc": {
+    "id": "3b6dc",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Transient session runtime tracks show/export inspection state in temp session files",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Summary\n\nzhar now keeps transient CLI session state outside durable memory under the OS temp directory. The session runtime records shallow and expanded show interactions, surfaces session state in export runtime context, and gates challenge escalation through effective facts such as session_challenge_enabled and session_challenge_agent.",
+    "created_at": "2026-04-15T19:10:57Z",
+    "updated_at": "2026-04-15T19:10:57Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "415c5": {
+    "id": "415c5",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Session runtime temp cache moved from .zhar/session to zhar_cache/session",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Transient session files now live under the OS temp directory at `zhar_cache/session` instead of `.zhar/session`.\n\nThis avoids collisions with project-root discovery and clarifies that the runtime session store is disposable cache state rather than project memory.",
+    "created_at": "2026-04-15T19:43:13Z",
+    "updated_at": "2026-04-15T19:43:13Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
   }
 }

@@ -18,7 +18,8 @@ def _flattened_key_help() -> str:
     lines = ["Print a mirrored harness file by flattened key.", "", "Available keys:"]
     for entry in list_harness_entries():
         summary = entry.summary or entry.description or "No description."
-        lines.append(f"  {entry.key:<40} {summary}")
+        lines.append(f"  {entry.key}")
+        lines.append(f"    {summary}")
     return "\n".join(lines)
 
 

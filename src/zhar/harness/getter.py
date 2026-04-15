@@ -50,6 +50,10 @@ def _first_sentence(text: str) -> str:
     stripped = text.strip()
     if not stripped:
         return ""
+    colon_index = stripped.find(":")
+    period_index = stripped.find(".")
+    if colon_index != -1 and (period_index == -1 or colon_index < period_index):
+        return stripped[:colon_index]
     parts = re.split(r"(?<=[.!?])\s+", stripped, maxsplit=1)
     return parts[0]
 

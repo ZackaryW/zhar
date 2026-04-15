@@ -554,5 +554,60 @@
       "tradeoffs": "better_semantic_ownership_less_file_level_drift_requires_more_deliberate_classification"
     },
     "custom": {}
+  },
+  "3a43d": {
+    "id": "3a43d",
+    "group": "decision_trail",
+    "node_type": "research_finding",
+    "summary": "Draft session runtime spec proposes transient per-session node inspection tracking and export challenge context",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Summary\n\nA draft session runtime spec was refined for transient node inspection tracking during CLI usage.\n\n## Key points\n\n- resolve session identity per CLI invocation\n- use 00000000 as the disabled sentinel\n- keep using environment variable resolution inside the running CLI process\n- add session list, adopt, and need-challenge CLI surfaces\n- store transient state under the OS temp directory instead of .zhar/mem\n- reflect current shown state on export\n- gate challenge surfacing through effective facts such as session_challenge_enabled and session_challenge_agent\n\n## Status\n\nDeferred until implementation work is scheduled.\n\n## Constraint\n\nThe design keeps session state out of durable project memory and does not rely on automatic mutation of the parent shell environment.",
+    "created_at": "2026-04-15T18:43:00Z",
+    "updated_at": "2026-04-15T18:53:57Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "outcome": "deferred",
+      "source_ref": "docs/session-runtime-spec.md"
+    },
+    "custom": {}
+  },
+  "3c488": {
+    "id": "3c488",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Session challenge workflow uses explicit current/clear commands and a repo-local challenge judge agent",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T19:17:28Z",
+    "updated_at": "2026-04-15T19:17:28Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "tradeoffs": "better_operator_visibility_more_explicit_review_surface_extra_cli_and_agent_surface"
+    },
+    "custom": {}
+  },
+  "3f2ae": {
+    "id": "3f2ae",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "CLI body staging now supports content-var alias and attached-note creation for non-memory-backed add targets",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T19:26:42Z",
+    "updated_at": "2026-04-15T19:26:42Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "tradeoffs": "better_cli_discoverability_preserves_content_contract_on_memory_backed_nodes_requires_env_var_not_shell_local_var"
+    },
+    "custom": {}
   }
 }

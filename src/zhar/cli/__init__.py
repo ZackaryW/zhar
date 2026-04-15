@@ -10,6 +10,7 @@ from zhar.cli.harness import register_harness_commands
 from zhar.cli.install import register_install_commands
 from zhar.cli.memory import register_memory_commands
 from zhar.cli.stack import register_stack_commands
+from zhar.mem_session.cli import register_session_commands
 
 
 class CategorizedGroup(click.Group):
@@ -35,6 +36,9 @@ class CategorizedGroup(click.Group):
         ),
         "Facts Commands": (
             "facts",
+        ),
+        "Session Commands": (
+            "session",
         ),
         "Agent Commands": (
             "agent",
@@ -83,15 +87,22 @@ class CategorizedGroup(click.Group):
     metavar="PATH",
     help="Path to the .zhar/ directory (default: auto-detect).",
 )
+@click.option(
+    "--no-session",
+    is_flag=True,
+    help="Disable transient session tracking for this invocation.",
+)
 @click.pass_context
-def cli(ctx: click.Context, root: str | None) -> None:
+def cli(ctx: click.Context, root: str | None, no_session: bool) -> None:
     """zhar — project memory tool."""
     ctx.ensure_object(dict)
     ctx.obj["root"] = root
+    ctx.obj["no_session"] = no_session
 
 
 register_memory_commands(cli)
 register_facts_commands(cli)
+register_session_commands(cli)
 register_install_commands(cli)
 register_harness_commands(cli)
 register_stack_commands(cli)

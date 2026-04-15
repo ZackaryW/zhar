@@ -16,6 +16,8 @@ A ``.zhar/`` directory sits at the project root.  Inside it::
 from __future__ import annotations
 
 import sys
+import tempfile
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -67,22 +69,37 @@ def load_config(root: Path) -> ZharConfig:
 def find_zhar_root(start: Path) -> Path | None:
     """Walk up from *start* looking for a project-local ``.zhar/`` directory.
 
-    Returns the ``.zhar/`` path if found, or ``None``. A user-level
-    ``Path.home() / '.zhar'`` is ignored unless it also looks like an actual
-    project root instead of the harness cache location.
+    Returns the ``.zhar/`` path if found, or ``None``. User-level cache roots
+    are ignored during the upward walk.
     """
     current = start.resolve()
-    home_zhar = Path.home().resolve() / ".zhar"
+    home_base = os.environ.get("HOME") or os.environ.get("USERPROFILE")
+    home_candidates = {Path.home().resolve() / ".zhar"}
+    if home_base:
+        home_candidates.add(Path(home_base).resolve() / ".zhar")
+    home_drive = os.environ.get("HOMEDRIVE")
+    home_path = os.environ.get("HOMEPATH")
+    if home_drive and home_path:
+        home_candidates.add((Path(f"{home_drive}{home_path}").resolve()) / ".zhar")
+    normalized_home_candidates = {
+        os.path.normcase(str(candidate.resolve()))
+        for candidate in home_candidates
+    }
+    normalized_temp_candidate = os.path.normcase(str((Path(tempfile.gettempdir()).resolve() / ".zhar").resolve()))
     while True:
         candidate = current / ".zhar"
         if candidate.is_dir():
-            if candidate == home_zhar:
-                has_project_layout = any(
-                    (candidate / entry).exists()
-                    for entry in ("mem", "cfg", "config.toml")
-                )
-                if not has_project_layout:
+            normalized_candidate = os.path.normcase(str(candidate.resolve()))
+            if normalized_candidate in normalized_home_candidates or normalized_candidate == normalized_temp_candidate:
+                parent = current.parent
+                if parent == current:
                     return None
+                current = parent
+                continue
+            has_project_layout = any(
+                (candidate / entry).exists()
+                for entry in ("mem", "cfg", "config.toml")
+            )
             return candidate
         parent = current.parent
         if parent == current:

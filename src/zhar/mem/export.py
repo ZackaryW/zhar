@@ -22,6 +22,8 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from zhar.mem_session.runtime import SessionRuntime, format_session_runtime_block
+
 from zhar.mem.node import Node
 from zhar.mem.query import Query
 from zhar.mem.store import MemStore
@@ -100,6 +102,7 @@ def export_text(
     relation_depth: int = 0,
     include_runtime_context: bool = False,
     project_root: Path | None = None,
+    session_runtime: SessionRuntime | None = None,
 ) -> str:
     """Render a full memory snapshot as plain text.
 
@@ -130,6 +133,11 @@ def export_text(
 
     if not sections:
         return "# zhar memory — 0 nodes\n"
+
+    if include_runtime_context and session_runtime is not None:
+        session_block = format_session_runtime_block(session_runtime)
+        if session_block:
+            sections.append(session_block)
 
     header = f"# zhar memory — {total} nodes\n"
     return header + "\n" + "\n\n".join(sections)
