@@ -1,0 +1,56 @@
+{
+  "32ab7": {
+    "id": "32ab7",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "Adds relation-depth expansion for architecture_context/component_rel export traversal while preserving the active tag boundary for all expanded nodes.",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Adds relation-depth expansion for architecture_context/component_rel export traversal while preserving the active tag boundary for all expanded nodes.",
+    "created_at": "2026-04-15T17:57:25Z",
+    "updated_at": "2026-04-15T17:57:25Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "3137a"
+    },
+    "custom": {}
+  },
+  "3ec07": {
+    "id": "3ec07",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "Suspicious session challenges are handled through explicit operational commands and a repo-local judge agent.",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Suspicious session challenges are handled through explicit operational commands and a repo-local judge agent.\n\n- `zhar session current` reports the active session and its challenge settings.\n- `zhar session clear` deletes the active transient session file when operators need to reset runtime state.\n- `.github/agents/challenge-judge.agent.md` defines the independent review workflow for suspicious nodes.",
+    "created_at": "2026-04-15T19:21:14Z",
+    "updated_at": "2026-04-15T19:21:14Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "3c488"
+    },
+    "custom": {}
+  },
+  "40d23": {
+    "id": "40d23",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "The CLI now supports env-backed body input through both `--from-env NAME` and `--content-var NAME` on `add`, `note`, and `add-note`.",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "The CLI now supports env-backed body input through both `--from-env NAME` and `--content-var NAME` on `add`, `note`, and `add-note`.\n\nFor non-memory-backed node types, `zhar add ... --from-env NAME` and `zhar add ... --content-var NAME` create an attached supplemental note automatically instead of dropping the staged body.\n\nThis surface reads environment variables only. In PowerShell, use `$env:NAME = ...`, not `$NAME = ...`.",
+    "created_at": "2026-04-15T19:26:42Z",
+    "updated_at": "2026-04-15T19:26:42Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "3f2ae"
+    },
+    "custom": {}
+  }
+}

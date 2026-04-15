@@ -10,13 +10,16 @@ from pathlib import Path
 import click
 
 from zhar.cli.common import format_node, format_related_nodes, open_store, parse_meta, parse_target_ids
+from zhar.cli.serializers import query_to_payload, render_json, show_to_payload, status_to_payload
 from zhar.mem.export import expand_relation_nodes, export_text
+from zhar.mem.export_payload import export_payload
 from zhar.mem.gc import run_gc
 from zhar.mem.group import validate_node_metadata
 from zhar.mem.node import make_node, patch_node
 from zhar.mem.query import Query
 from zhar.mem.scan import scan_tree, sync_sources
 from zhar.mem.verify import Severity, run_verify
+from zhar.mem_session.runtime import get_session_runtime, record_show_event
 from zhar.migration.zmem import migrate_zmem_json
 from zhar.utils.fs import ensure_gitignore_entry
 
@@ -33,6 +36,32 @@ def _resolve_note_body(content: str | None, from_env: str | None) -> str:
     if content is None:
         raise click.UsageError("Missing CONTENT. Provide text, '-', or --from-env NAME.")
     return click.get_text_stream("stdin").read() if content == "-" else content
+
+
+def _resolve_body_env_name(from_env: str | None, content_var: str | None) -> str | None:
+    """Resolve the selected environment-variable option for body input."""
+    if from_env is not None and content_var is not None:
+        raise click.UsageError("Provide either --from-env NAME or --content-var NAME, not both.")
+    return from_env if from_env is not None else content_var
+
+
+def _create_attached_note(
+    store,
+    *,
+    body: str,
+    target_ids: list[str],
+) -> str:
+    """Create and persist one supplemental note attached to *target_ids*."""
+    note = make_node(
+        group="notes",
+        node_type="note",
+        summary=(body.splitlines()[0].strip() if body.strip() else f"Attached note for {target_ids[0]}"),
+        content=body,
+        metadata={"agent": "copilot", "target_ids": ",".join(target_ids)},
+        node_id=store.allocate_id(),
+    )
+    store.save(note)
+    return note.id
 
 
 def _get_node_or_exit(ctx: click.Context, node_id: str):
@@ -102,6 +131,8 @@ def init_command(ctx: click.Context) -> None:
 @click.option("--tag", "tag", multiple=True, metavar="NAME", help="Tag (repeatable). e.g. --tag auth --tag perf")
 @click.option("--source", default=None, metavar="PATH", help="Source file reference.")
 @click.option("--content", default=None, metavar="TEXT", help="Markdown body (memory-backed types only). Use '-' to read stdin.")
+@click.option("--from-env", default=None, metavar="NAME", help="Read the body from environment variable NAME. For non-memory-backed nodes, this creates an attached supplemental note.")
+@click.option("--content-var", default=None, metavar="NAME", help="Alias for --from-env NAME. Reads the body from environment variable NAME.")
 @click.pass_context
 def add_command(
     ctx: click.Context,
@@ -113,6 +144,8 @@ def add_command(
     tag: tuple[str, ...],
     source: str | None,
     content: str | None,
+    from_env: str | None,
+    content_var: str | None,
 ) -> None:
     """Add a new memory node."""
     try:
@@ -120,8 +153,6 @@ def add_command(
     except click.UsageError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
-
-    body = click.get_text_stream("stdin").read() if content == "-" else content
     store, _ = open_store(ctx.obj["root"])
 
     if group not in store.groups:
@@ -140,6 +171,20 @@ def add_command(
             click.echo(f"Error: {error}", err=True)
         sys.exit(1)
 
+    try:
+        body_env_name = _resolve_body_env_name(from_env, content_var)
+        body = _resolve_note_body(content, body_env_name) if (content is not None or body_env_name is not None) else None
+    except click.UsageError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
+
+    if body is not None and not type_def.memory_backed and body_env_name is None:
+        click.echo(
+            f"Error: node type '{node_type}' in group '{group}' is not memory_backed — cannot attach content.",
+            err=True,
+        )
+        sys.exit(1)
+
     node = make_node(
         group=group,
         node_type=node_type,
@@ -147,7 +192,7 @@ def add_command(
         status=status or type_def.default_status,
         tags=list(tag),
         source=source,
-        content=body,
+        content=body if type_def.memory_backed else None,
         metadata=metadata,
         node_id=store.allocate_id(),
     )
@@ -158,22 +203,40 @@ def add_command(
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
+    created_note_id: str | None = None
+    if body is not None and not type_def.memory_backed and body_env_name is not None:
+        try:
+            created_note_id = _create_attached_note(store, body=body, target_ids=[node.id])
+        except ValueError as exc:
+            click.echo(f"Error: {exc}", err=True)
+            sys.exit(1)
+
     click.echo(f"Added {node.id}  [{group}/{node_type}]  {summary!r}")
+    if created_note_id is not None:
+        click.echo(f"Attached note {created_note_id}  targets={node.id!r}")
 
 
 @click.command(name="add-note")
 @click.argument("target_id")
-@click.argument("content")
+@click.argument("content", required=False)
 @click.option("--target", "extra_targets", multiple=True, metavar="NODE_ID", help="Additional node to attach this note to (repeatable).")
+@click.option("--from-env", default=None, metavar="NAME", help="Read the note body from environment variable NAME.")
+@click.option("--content-var", default=None, metavar="NAME", help="Alias for --from-env NAME. Reads the note body from environment variable NAME.")
 @click.pass_context
 def add_note_command(
     ctx: click.Context,
     target_id: str,
-    content: str,
+    content: str | None,
     extra_targets: tuple[str, ...],
+    from_env: str | None,
+    content_var: str | None,
 ) -> None:
     """Create a supplemental note attached to one or more existing nodes."""
-    body = click.get_text_stream("stdin").read() if content == "-" else content
+    try:
+        body = _resolve_note_body(content, _resolve_body_env_name(from_env, content_var))
+    except click.UsageError as exc:
+        click.echo(f"Error: {exc}", err=True)
+        sys.exit(1)
     store, _ = open_store(ctx.obj["root"])
 
     target_ids = [target_id, *extra_targets]
@@ -191,22 +254,13 @@ def add_note_command(
             click.echo("Error: note nodes cannot target other note nodes.", err=True)
             sys.exit(1)
 
-    note = make_node(
-        group="notes",
-        node_type="note",
-        summary=(body.splitlines()[0].strip() if body.strip() else f"Attached note for {target_id}"),
-        content=body,
-        metadata={"agent": "copilot", "target_ids": ",".join(unique_targets)},
-        node_id=store.allocate_id(),
-    )
-
     try:
-        store.save(note)
+        note_id = _create_attached_note(store, body=body, target_ids=unique_targets)
     except ValueError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
 
-    click.echo(f"Added {note.id}  [notes/note]  targets={','.join(unique_targets)!r}")
+    click.echo(f"Added {note_id}  [notes/note]  targets={','.join(unique_targets)!r}")
 
 
 @click.command(name="note")
@@ -218,16 +272,23 @@ def add_note_command(
     metavar="NAME",
     help="Read the note body from environment variable NAME.",
 )
+@click.option(
+    "--content-var",
+    default=None,
+    metavar="NAME",
+    help="Alias for --from-env NAME. Reads the note body from environment variable NAME.",
+)
 @click.pass_context
 def note_command(
     ctx: click.Context,
     node_id: str,
     content: str | None,
     from_env: str | None,
+    content_var: str | None,
 ) -> None:
     """Attach or replace the markdown body of a memory-backed node."""
     try:
-        body = _resolve_note_body(content, from_env)
+        body = _resolve_note_body(content, _resolve_body_env_name(from_env, content_var))
     except click.UsageError as exc:
         click.echo(f"Error: {exc}", err=True)
         sys.exit(1)
@@ -282,8 +343,9 @@ def remove_command(ctx: click.Context, node_id: str) -> None:
 @click.command(name="show")
 @click.argument("node_id")
 @click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.pass_context
-def show_command(ctx: click.Context, node_id: str, relation_depth: int) -> None:
+def show_command(ctx: click.Context, node_id: str, relation_depth: int, output_format: str) -> None:
     """Display all fields of a node."""
     store, _ = open_store(ctx.obj["root"])
     node = store.get(node_id)
@@ -298,7 +360,11 @@ def show_command(ctx: click.Context, node_id: str, relation_depth: int) -> None:
         tags=node.tags,
         relation_depth=relation_depth,
     )
+    record_show_event(get_session_runtime(ctx), node.id, relation_depth=relation_depth)
     extra = [related for related in related_nodes if related.id != node.id]
+    if output_format == "json":
+        click.echo(render_json(show_to_payload(node, extra)))
+        return
     click.echo(format_node(node) + format_related_nodes(extra))
 
 
@@ -310,6 +376,7 @@ def show_command(ctx: click.Context, node_id: str, relation_depth: int) -> None:
 @click.option("--q", "text", default=None, metavar="TEXT", help="Fuzzy summary search.")
 @click.option("--note-depth", default=0, type=int, metavar="N", help="Show attached notes under each matched node up to depth N (default: 0).")
 @click.option("--limit", default=None, type=int, metavar="N", help="Max results.")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.pass_context
 def query_command(
     ctx: click.Context,
@@ -320,6 +387,7 @@ def query_command(
     text: str | None,
     note_depth: int,
     limit: int | None,
+    output_format: str,
 ) -> None:
     """Search and filter memory nodes."""
     store, _ = open_store(ctx.obj["root"])
@@ -339,7 +407,22 @@ def query_command(
         )
     )
     if not nodes:
+        if output_format == "json":
+            click.echo(render_json(query_to_payload([])))
+            return
         click.echo("No results.")
+        return
+
+    note_map: dict[str, list] = {}
+    if note_depth > 0:
+        note_map = {
+            node.id: store.attached_notes(node.id)
+            for node in nodes
+            if node.group != "notes"
+        }
+
+    if output_format == "json":
+        click.echo(render_json(query_to_payload(nodes, note_map=note_map)))
         return
 
     for node in nodes:
@@ -352,7 +435,7 @@ def query_command(
             f"{node.summary!r}{tag_str}{meta_str}"
         )
         if note_depth > 0 and node.group != "notes":
-            for note in store.attached_notes(node.id):
+            for note in note_map.get(node.id, store.attached_notes(node.id)):
                 click.echo(f"  note {note.id}  {note.summary!r}")
                 if note.content:
                     for line in note.content.splitlines():
@@ -410,11 +493,15 @@ def prune_command(
 
 
 @click.command(name="status")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.pass_context
-def status_command(ctx: click.Context) -> None:
+def status_command(ctx: click.Context, output_format: str) -> None:
     """Show per-group node counts."""
     store, _ = open_store(ctx.obj["root"])
     stats = store.stats()
+    if output_format == "json":
+        click.echo(render_json(status_to_payload(stats)))
+        return
     click.echo(f"Total nodes: {sum(value['total'] for value in stats.values())}\n")
     for group_name, data in stats.items():
         click.echo(f"  {group_name}  ({data['total']})")
@@ -453,6 +540,7 @@ def scan_command(ctx: click.Context, path: str, ext: tuple[str, ...], dry_run: b
 @click.option("--tag", "tag", multiple=True, metavar="TAG", help="Node must have all listed tags (repeatable).")
 @click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
 @click.option("--with-runtime-context/--no-runtime-context", default=False, help="Include runtime context gathered from group-defined tools.")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.option("--out", default=None, type=click.Path(), metavar="FILE", help="Write output to FILE instead of stdout.")
 @click.pass_context
 def export_command(
@@ -462,24 +550,39 @@ def export_command(
     tag: tuple[str, ...],
     relation_depth: int,
     with_runtime_context: bool,
+    output_format: str,
     out: str | None,
 ) -> None:
     """Print a memory snapshot for agent context injection."""
     store, zhar_root = open_store(ctx.obj["root"])
-    text = export_text(
-        store,
-        groups=list(group) or None,
-        statuses=list(status) or None,
-        tags=list(tag) or None,
-        relation_depth=relation_depth,
-        include_runtime_context=with_runtime_context,
-        project_root=zhar_root.parent,
-    )
+    session_runtime = get_session_runtime(ctx) if with_runtime_context else None
+    if output_format == "json":
+        rendered = render_json(export_payload(
+            store,
+            groups=list(group) or None,
+            statuses=list(status) or None,
+            tags=list(tag) or None,
+            relation_depth=relation_depth,
+            include_runtime_context=with_runtime_context,
+            project_root=zhar_root.parent,
+            session_runtime=session_runtime,
+        ))
+    else:
+        rendered = export_text(
+            store,
+            groups=list(group) or None,
+            statuses=list(status) or None,
+            tags=list(tag) or None,
+            relation_depth=relation_depth,
+            include_runtime_context=with_runtime_context,
+            project_root=zhar_root.parent,
+            session_runtime=session_runtime,
+        )
     if out:
-        Path(out).write_text(text, encoding="utf-8")
+        Path(out).write_text(rendered, encoding="utf-8")
         click.echo(f"Written to {out}")
         return
-    click.echo(text)
+    click.echo(rendered)
 
 
 @click.command(name="gc")

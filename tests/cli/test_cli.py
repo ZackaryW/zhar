@@ -1,4 +1,6 @@
 """TDD: zhar CLI commands — init, add, mutation, query, and status."""
+from datetime import datetime, timezone
+import json
 from types import SimpleNamespace
 from pathlib import Path
 import pytest
@@ -7,6 +9,9 @@ from click.testing import CliRunner
 from zhar.cli import cli
 from zhar.mem.node import make_node
 from zhar.mem.store import MemStore
+from zhar.mem_session.model import SessionData, SessionNodeState
+from zhar.mem_session.store import save_session
+from zhar.utils.times import format_dt
 
 
 @pytest.fixture
@@ -49,6 +54,7 @@ class TestHelp:
         assert result.exit_code == 0, result.output
         assert "Memory Commands:" in result.output
         assert "Facts Commands:" in result.output
+        assert "Session Commands:" in result.output
         assert "Agent Commands:" in result.output
         assert "Harness Commands:" in result.output
         assert "Stack Commands:" in result.output
@@ -58,6 +64,7 @@ class TestHelp:
         assert "  remove    " in result.output
         assert "  prune     " in result.output
         assert "  facts  " in result.output
+        assert "  session" in result.output
         assert "  install    " in result.output
         assert "  harness" in result.output
         assert "  stack  " in result.output
@@ -118,6 +125,77 @@ class TestAdd:
             "--content", "## Context\n\nYAML was slow.",
         ])
         assert result.exit_code == 0, result.output
+
+    def test_add_with_from_env_on_backed_type_sets_content(self, project, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "--root", str(project), "add",
+                "decision_trail", "adr", "Use orjson",
+                "--from-env", "ZHAR_NOTE_BODY",
+            ],
+            env={"ZHAR_NOTE_BODY": "## Context\n\nYAML was slow."},
+        )
+
+        assert result.exit_code == 0, result.output
+        node_id = __import__("re").search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
+        store = MemStore(project)
+        node = store.get(node_id)
+        assert node is not None
+        assert node.content == "## Context\n\nYAML was slow."
+
+    def test_add_with_from_env_on_non_backed_type_creates_attached_note(self, project, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "--root", str(project), "add",
+                "decision_trail", "decision", "Runtime workflow",
+                "--from-env", "ZHAR_NOTE_BODY",
+            ],
+            env={"ZHAR_NOTE_BODY": "Runtime detail body."},
+        )
+
+        assert result.exit_code == 0, result.output
+        import re
+        node_id = re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
+        assert "Attached note" in result.output
+        store = MemStore(project)
+        notes = store.attached_notes(node_id)
+        assert len(notes) == 1
+        assert notes[0].content == "Runtime detail body."
+
+    def test_add_with_content_var_alias_on_non_backed_type_creates_attached_note(self, project, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "--root", str(project), "add",
+                "decision_trail", "decision", "Runtime workflow alias",
+                "--content-var", "ZHAR_NOTE_BODY_ALIAS_TEST",
+            ],
+            env={"ZHAR_NOTE_BODY_ALIAS_TEST": "Alias-backed runtime detail."},
+        )
+
+        assert result.exit_code == 0, result.output
+        import re
+        node_id = re.search(r"Added ([0-9a-f]{4,5})", result.output).group(1)
+        notes = MemStore(project).attached_notes(node_id)
+        assert len(notes) == 1
+        assert notes[0].content == "Alias-backed runtime detail."
+
+    def test_add_rejects_content_and_from_env_together(self, project, runner):
+        result = runner.invoke(
+            cli,
+            [
+                "--root", str(project), "add",
+                "decision_trail", "adr", "Use orjson",
+                "--content", "literal",
+                "--from-env", "ZHAR_NOTE_BODY",
+            ],
+            env={"ZHAR_NOTE_BODY": "ignored"},
+        )
+
+        assert result.exit_code != 0
+        assert "either CONTENT or --from-env" in result.output
 
     def test_add_content_on_non_backed_type_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, [
@@ -187,8 +265,8 @@ class TestNote:
         nid = self._add_adr(project, runner)
         result = runner.invoke(
             cli,
-            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY"],
-            env={"ZHAR_NOTE_BODY": "## Body\n\nFrom env."},
+            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY_TEST"],
+            env={"ZHAR_NOTE_BODY_TEST": "## Body\n\nFrom env."},
         )
         assert result.exit_code == 0, result.output
 
@@ -202,7 +280,7 @@ class TestNote:
         nid = self._add_adr(project, runner)
         result = runner.invoke(
             cli,
-            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY"],
+            ["--root", str(project), "note", nid, "--from-env", "ZHAR_NOTE_BODY_MISSING_TEST"],
         )
         assert result.exit_code != 0
         assert "is not set" in result.output
@@ -211,11 +289,20 @@ class TestNote:
         nid = self._add_adr(project, runner)
         result = runner.invoke(
             cli,
-            ["--root", str(project), "note", nid, "literal", "--from-env", "ZHAR_NOTE_BODY"],
-            env={"ZHAR_NOTE_BODY": "ignored"},
+            ["--root", str(project), "note", nid, "literal", "--from-env", "ZHAR_NOTE_BODY_CONFLICT_TEST"],
+            env={"ZHAR_NOTE_BODY_CONFLICT_TEST": "ignored"},
         )
         assert result.exit_code != 0
         assert "either CONTENT or --from-env" in result.output
+
+    def test_note_reads_content_from_content_var_alias(self, project, runner):
+        nid = self._add_adr(project, runner)
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "note", nid, "--content-var", "ZHAR_NOTE_BODY_ALIAS_NOTE_TEST"],
+            env={"ZHAR_NOTE_BODY_ALIAS_NOTE_TEST": "## Body\n\nFrom alias."},
+        )
+        assert result.exit_code == 0, result.output
 
     def test_note_on_non_backed_type_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, [
@@ -234,6 +321,48 @@ class TestNote:
             "--root", str(project), "note", "zzzz", "content",
         ])
         assert result.exit_code != 0
+
+
+class TestAddNote:
+    def test_add_note_reads_content_from_env_var(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Runtime workflow",
+        )
+        store.save(base)
+
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "add-note", base.id, "--from-env", "ZHAR_NOTE_BODY"],
+            env={"ZHAR_NOTE_BODY": "Supplemental detail."},
+        )
+
+        assert result.exit_code == 0, result.output
+        notes = MemStore(project).attached_notes(base.id)
+        assert len(notes) == 1
+        assert notes[0].content == "Supplemental detail."
+
+    def test_add_note_reads_content_from_content_var_alias(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Runtime workflow alias",
+        )
+        store.save(base)
+
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "add-note", base.id, "--content-var", "ZHAR_ADD_NOTE_ALIAS_TEST"],
+            env={"ZHAR_ADD_NOTE_ALIAS_TEST": "Supplemental detail from alias."},
+        )
+
+        assert result.exit_code == 0, result.output
+        notes = MemStore(project).attached_notes(base.id)
+        assert len(notes) == 1
+        assert notes[0].content == "Supplemental detail from alias."
 
 
 class TestAddNote:
@@ -394,6 +523,28 @@ class TestShow:
     def test_show_unknown_id_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, ["--root", str(project), "show", "zzzz"])
         assert result.exit_code != 0
+
+    def test_show_can_render_json(self, project, runner):
+        add = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Must support TDD",
+            "--content", "## Why\n\nNeeded.",
+            "--tag", "quality",
+        ])
+        import re
+        nid = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
+
+        result = runner.invoke(cli, ["--root", str(project), "show", nid, "--format", "json"])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["node"]["id"] == nid
+        assert payload["node"]["group"] == "project_dna"
+        assert payload["node"]["node_type"] == "core_requirement"
+        assert payload["node"]["summary"] == "Must support TDD"
+        assert payload["node"]["content"] == "## Why\n\nNeeded."
+        assert payload["node"]["tags"] == ["quality"]
+        assert payload["related_nodes"] == []
 
 
 class TestSetStatus:
@@ -563,6 +714,42 @@ class TestQuery:
         ])
         assert result.exit_code == 0
 
+    def test_query_can_render_json(self, project, runner):
+        self._populate(project, runner)
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "query", "--format", "json",
+        ])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["count"] >= 2
+        assert any(node["summary"] == "Fast query engine" for node in payload["nodes"])
+        assert any(node["summary"] == "Memory leak in scan" for node in payload["nodes"])
+
+    def test_query_json_can_include_attached_notes(self, project, runner):
+        add = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Base requirement",
+            "--content", "## Why\n\nBecause.",
+        ])
+        import re
+        node_id = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
+        note = runner.invoke(cli, [
+            "--root", str(project), "add-note", node_id, "Supplemental note.",
+        ])
+        assert note.exit_code == 0, note.output
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "query", "--format", "json", "--note-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        target = next(node for node in payload["nodes"] if node["id"] == node_id)
+        assert len(target["notes"]) == 1
+        assert target["notes"][0]["content"] == "Supplemental note."
+
 
 # ── status ────────────────────────────────────────────────────────────────────
 
@@ -581,6 +768,20 @@ class TestStatus:
         result = runner.invoke(cli, ["--root", str(project), "status"])
         assert result.exit_code == 0
         assert "1" in result.output  # at least one count shows 1
+
+    def test_status_can_render_json(self, project, runner):
+        runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "A req",
+        ])
+
+        result = runner.invoke(cli, ["--root", str(project), "status", "--format", "json"])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["total_nodes"] >= 1
+        assert payload["groups"]["project_dna"]["total"] >= 1
+        assert "core_requirement" in payload["groups"]["project_dna"]["by_type"]
 
 
 class TestFacts:
@@ -680,6 +881,294 @@ class TestInstallCommand:
 
 
 class TestExport:
+    def test_export_can_render_json(self, project, runner):
+        runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "Web requirement",
+            "--content", "## Why\n\nWeb only.",
+            "--tag", "project:web",
+        ])
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export", "--format", "json", "--tag", "project:web",
+        ])
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["total_nodes"] == 1
+        assert payload["groups"]["project_dna"]["count"] == 1
+        assert payload["groups"]["project_dna"]["nodes"][0]["summary"] == "Web requirement"
+
+    def test_export_can_include_transient_session_state(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        store = MemStore(project)
+        node = make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Inspect requirement",
+            content="## Why\n\nTrack show state.",
+        )
+        store.save(node)
+
+        show_result = runner.invoke(
+            cli,
+            ["--root", str(project), "show", node.id],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+        export_result = runner.invoke(
+            cli,
+            ["--root", str(project), "export", "--with-runtime-context"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert show_result.exit_code == 0, show_result.output
+        assert export_result.exit_code == 0, export_result.output
+        assert "### Session state" in export_result.output
+        assert "session_id=session-one" in export_result.output
+        assert f"- {node.id} state=shown score=1" in export_result.output
+
+    def test_export_json_can_include_runtime_context(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        store = MemStore(project)
+        node = make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Inspect requirement",
+            content="## Why\n\nTrack show state.",
+        )
+        store.save(node)
+
+        show_result = runner.invoke(
+            cli,
+            ["--root", str(project), "show", node.id],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+        export_result = runner.invoke(
+            cli,
+            ["--root", str(project), "export", "--format", "json", "--with-runtime-context"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert show_result.exit_code == 0, show_result.output
+        assert export_result.exit_code == 0, export_result.output
+        payload = json.loads(export_result.output)
+        assert payload["runtime_context"]["session"]["session_id"] == "session-one"
+        assert payload["runtime_context"]["session"]["shown_nodes"] == 1
+        assert payload["runtime_context"]["session"]["nodes"][0]["id"] == node.id
+
+    def test_session_need_challenge_reports_suspicious_nodes_when_enabled(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        now = datetime(2026, 4, 15, 18, 30, tzinfo=timezone.utc)
+        save_session(
+            SessionData(
+                session_id="session-one",
+                project_root=str(project.parent),
+                cwd=str(project.parent),
+                started_at=format_dt(now),
+                updated_at=format_dt(now),
+                nodes={
+                    "353ca": SessionNodeState(
+                        state="suspicious",
+                        show_count=9,
+                        expanded_count=1,
+                        last_shown_at=format_dt(now),
+                        last_expanded_at=format_dt(now),
+                        last_scored_at=format_dt(now),
+                        score=57,
+                        status="suspicious",
+                    )
+                },
+            ),
+            base_dir=session_dir,
+        )
+
+        enabled_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "session_challenge_enabled", "true",
+        ])
+        agent_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "session_challenge_agent", "challenge-judge",
+        ])
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "session", "need-challenge"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert enabled_result.exit_code == 0, enabled_result.output
+        assert agent_result.exit_code == 0, agent_result.output
+        assert result.exit_code == 0, result.output
+        assert "353ca" in result.output
+        assert "challenge-judge" in result.output
+
+    def test_session_list_includes_saved_sessions_for_current_project(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        now = datetime(2026, 4, 15, 18, 30, tzinfo=timezone.utc)
+        save_session(
+            SessionData(
+                session_id="session-one",
+                project_root=str(project.parent),
+                cwd=str(project.parent),
+                started_at=format_dt(now),
+                updated_at=format_dt(now),
+                nodes={
+                    "353ca": SessionNodeState(
+                        state="suspicious",
+                        show_count=9,
+                        expanded_count=1,
+                        last_shown_at=format_dt(now),
+                        last_expanded_at=format_dt(now),
+                        last_scored_at=format_dt(now),
+                        score=57,
+                        status="suspicious",
+                    )
+                },
+            ),
+            base_dir=session_dir,
+        )
+
+        result = runner.invoke(cli, ["--root", str(project), "session", "list"])
+
+        assert result.exit_code == 0, result.output
+        assert "session-one" in result.output
+        assert "suspicious=1" in result.output
+
+    def test_session_current_reports_active_session_metadata(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        now = datetime(2026, 4, 15, 18, 30, tzinfo=timezone.utc)
+        save_session(
+            SessionData(
+                session_id="session-one",
+                project_root=str(project.parent),
+                cwd=str(project.parent),
+                started_at=format_dt(now),
+                updated_at=format_dt(now),
+                challenge_enabled=True,
+                nodes={
+                    "353ca": SessionNodeState(
+                        state="shown",
+                        show_count=2,
+                        expanded_count=0,
+                        last_shown_at=format_dt(now),
+                        last_scored_at=format_dt(now),
+                        score=2,
+                        status="normal",
+                    )
+                },
+            ),
+            base_dir=session_dir,
+        )
+        fact_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "session_challenge_enabled", "true",
+        ])
+        assert fact_result.exit_code == 0, fact_result.output
+
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "session", "current"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "session_id=session-one" in result.output
+        assert "enabled=true" in result.output
+        assert "shown_nodes=1" in result.output
+
+    def test_session_current_can_render_json(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        now = datetime(2026, 4, 15, 18, 30, tzinfo=timezone.utc)
+        save_session(
+            SessionData(
+                session_id="session-one",
+                project_root=str(project.parent),
+                cwd=str(project.parent),
+                started_at=format_dt(now),
+                updated_at=format_dt(now),
+                challenge_enabled=True,
+                nodes={
+                    "353ca": SessionNodeState(
+                        state="shown",
+                        show_count=2,
+                        expanded_count=0,
+                        last_shown_at=format_dt(now),
+                        last_scored_at=format_dt(now),
+                        score=2,
+                        status="normal",
+                    )
+                },
+            ),
+            base_dir=session_dir,
+        )
+        fact_result = runner.invoke(cli, [
+            "--root", str(project), "facts", "set", "session_challenge_enabled", "true",
+        ])
+        assert fact_result.exit_code == 0, fact_result.output
+
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "session", "current", "--format", "json"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert result.exit_code == 0, result.output
+        payload = json.loads(result.output)
+        assert payload["session_id"] == "session-one"
+        assert payload["enabled"] is True
+        assert payload["shown_nodes"] == 1
+        assert payload["challenge_enabled"] is True
+
+    def test_session_clear_removes_active_session_file(self, project, runner, monkeypatch):
+        from zhar.mem_session import runtime as session_runtime_module
+
+        session_dir = project / "tmp-session"
+        monkeypatch.setattr(session_runtime_module, "default_session_dir", lambda: session_dir)
+
+        now = datetime(2026, 4, 15, 18, 30, tzinfo=timezone.utc)
+        save_session(
+            SessionData(
+                session_id="session-one",
+                project_root=str(project.parent),
+                cwd=str(project.parent),
+                started_at=format_dt(now),
+                updated_at=format_dt(now),
+                nodes={},
+            ),
+            base_dir=session_dir,
+        )
+
+        result = runner.invoke(
+            cli,
+            ["--root", str(project), "session", "clear"],
+            env={"ZHAR_SESSION_ID": "session-one"},
+        )
+
+        assert result.exit_code == 0, result.output
+        assert "Cleared session session-one" in result.output
+        assert not (session_dir / "session-one.json").exists()
+
     def test_export_can_include_runtime_context(self, project, runner, monkeypatch):
         from zhar.mem.groups import code_history as code_history_group
 

@@ -1,0 +1,144 @@
+{
+  "ffad": {
+    "id": "ffad",
+    "group": "project_dna",
+    "node_type": "core_goal",
+    "summary": "Build zhar: a group-clustered agent memory harness with pluggable backends, TDD discipline, and a self-bootstrapping facts-driven CLI",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-13T16:39:48Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "f6ce": {
+    "id": "f6ce",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "Use orjson as hard dependency for all JSON serialisation",
+    "status": "active",
+    "tags": [
+      "performance",
+      "json"
+    ],
+    "source": null,
+    "content": "...",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:39:43Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "high",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "5518": {
+    "id": "5518",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "Support pluggable backends per group (json default, sqlite/mem0/zep future)",
+    "status": "active",
+    "tags": [
+      "architecture",
+      "backend"
+    ],
+    "source": null,
+    "content": "## Requirement\n\nzhar must support backend selection at the group boundary rather than forcing one storage mechanism for the entire memory graph.\n\n## Why\n\nDifferent memory groups have different access patterns and durability needs. JSON is the default because it is simple, reviewable, and easy to keep in git, but the architecture should not block future backends such as SQLite, mem0, or zep where they provide real value.\n\n## Implications\n\n- Backend choice should remain an implementation detail behind the MemStore and group APIs.\n- Group definitions and node semantics must stay stable even when storage changes.\n- New backends should preserve ids, statuses, metadata validation, and export/query behavior.\n- JSON remains the baseline and compatibility target until another backend is intentionally promoted.\n",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:39Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "high",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "ed31": {
+    "id": "ed31",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "Follow strict TDD — tests written before implementation, zero failures at all times",
+    "status": "active",
+    "tags": [
+      "tdd",
+      "quality"
+    ],
+    "source": null,
+    "content": "## Requirement\n\nAll feature work must follow strict TDD: write or update the failing test first, implement the smallest change that makes it pass, and keep the suite green throughout the change.\n\n## Why\n\nzhar is a harness for agent workflows. Regressions in memory, facts, parsing, and stack behavior are expensive because they distort the context that later agents rely on. TDD keeps that surface stable and makes behavior changes explicit.\n\n## Working Rule\n\n- Add or adjust the test that demonstrates the intended behavior before implementation.\n- Do not leave known failing tests in the tree.\n- Prefer targeted suites while iterating, then run the relevant broader validation before closing the task.\n- If behavior changes intentionally, update tests and guidance together.\n",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:39Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "high",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "07fb": {
+    "id": "07fb",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "User-defined groups via mem_*.py files dropped in .zhar/cfg/",
+    "status": "active",
+    "tags": [
+      "extensibility"
+    ],
+    "source": null,
+    "content": "## Requirement\n\nThe workspace must support user-defined memory groups by dropping mem_*.py files into .zhar/cfg/.\n\n## Why\n\nThe built-in groups cover the core zhar model, but some projects need domain-specific records without forking the tool. Group plugins keep the system extensible while preserving the same node, query, export, and validation contracts.\n\n## Expectations\n\n- Custom groups should use the same GroupDef and NodeTypeDef model as built-ins.\n- They must integrate with the existing store, export, query, and verify flows.\n- Extensibility should not weaken core invariants such as singleton enforcement or metadata validation.\n",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:39Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "med",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "c30a": {
+    "id": "c30a",
+    "group": "project_dna",
+    "node_type": "product_context",
+    "summary": "Primary users are AI agents (Claude, GPT-4) maintaining persistent project context across sessions; secondary users are developers querying and inspecting that context",
+    "status": "active",
+    "tags": [
+      "agents",
+      "cli"
+    ],
+    "source": null,
+    "content": "## Audience\n\nThe primary users of zhar are AI coding agents that need durable, structured project context across sessions, handoffs, and model resets. Developers are the secondary audience: they inspect, query, and maintain the same memory layer directly.\n\n## Product Consequence\n\nThis means the system has to optimize for machine-readable consistency first while remaining understandable and reviewable for humans.\n\n## Implications\n\n- CLI output and exported context should be compact, stable, and explicit.\n- Memory records should capture durable semantic context rather than ephemeral chat logs.\n- Stack and harness features should generate workspace-ready files that agent tools can consume without manual cleanup.\n",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:39Z",
+    "expires_at": null,
+    "metadata": {
+      "audience": "agents+developers",
+      "agent": "claude"
+    },
+    "custom": {}
+  },
+  "74c1": {
+    "id": "74c1",
+    "group": "project_dna",
+    "node_type": "core_requirement",
+    "summary": "code_history must complement git diff, status, and commit history instead of duplicating them",
+    "status": "active",
+    "tags": [
+      "code-history",
+      "git"
+    ],
+    "source": "src/zhar/mem/groups/code_history.py::120::%ZHAR:74c1%",
+    "content": "## Why\n\nGit already owns raw diff, status, and commit-detail history. zhar should preserve durable semantic memory about why a change matters, while relying on git for live code movement and detailed patch history.\n\n## Requirement\n\n- code_history records should stay compact and semantic.\n- Source markers are the canonical code locator once present.\n- Exported agent context may gather git-derived runtime context to complement code_history, but should avoid embedding full duplicate diffs.\n- File moves should be followed through source markers and git history rather than redundant stored path copies.",
+    "created_at": "2026-04-13T23:13:34Z",
+    "updated_at": "2026-04-13T23:29:34Z",
+    "expires_at": null,
+    "metadata": {
+      "priority": "high",
+      "agent": "copilot"
+    },
+    "custom": {}
+  }
+}

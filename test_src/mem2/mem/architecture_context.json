@@ -1,0 +1,108 @@
+{
+  "2eaad": {
+    "id": "2eaad",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory CLI lifecycle reconciliation surface",
+    "status": "active",
+    "tags": [
+      "cli",
+      "memory",
+      "lifecycle"
+    ],
+    "source": null,
+    "content": "## Commands\n\n- Use `uv run zhar set-status <id> <status>` to move nodes through valid lifecycle states.\n- Use `uv run zhar remove <id>` only for incorrect or intentionally transient records.\n- Use `uv run zhar prune ...` with filters and preferably `--dry-run` first when reconciling many unexpected nodes.\n\n## Development Context\n\nWhen developing zhar inside this repository, prefer `uv run zhar` so the CLI reflects the current workspace source tree rather than an older installed entrypoint.\n\n## Constraint\n\nPrefer status transitions over deletion whenever the node should remain part of project history.",
+    "created_at": "2026-04-14T23:03:15Z",
+    "updated_at": "2026-04-14T23:03:15Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "353ca": {
+    "id": "353ca",
+    "group": "architecture_context",
+    "node_type": "architecture",
+    "summary": "Relation expansion is currently limited to component_rel adjacency and depends on shared component identity for broader traversal",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Context\n\nRecent export and show relation-depth work changed the effective architecture semantics of architecture_context, not just CLI file history.\n\n## Current rule\n\nNamespace-scoped traversal for export and show currently starts from the seed set and traverses only architecture_context/component_rel nodes through shared from_component / to_component endpoints.\n\n## Boundary rule\n\nExpanded nodes stay inside the active tag boundary of the seed selection. Traversal does not cross into differently tagged relation nodes.\n\n## Constraint\n\nBroader traversal across other node types requires a shared component identity in their metadata. Without that anchor, relation expansion cannot safely connect non-relation nodes into the same component neighborhood.\n\n## Implication\n\nChanges to namespacing or relation traversal behavior should be recorded in architecture_context first, with code_history used only as supplemental file-level breadcrumbing.",
+    "created_at": "2026-04-15T18:08:22Z",
+    "updated_at": "2026-04-15T18:12:14Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "38680": {
+    "id": "38680",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory mutation workflow supports literal bodies, stdin/env input, and attached supplemental notes",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Scope\n\nThis workflow covers durable memory mutations performed through the CLI rather than file-level implementation details.\n\n## Mutation inputs\n\nUse literal body text, stdin, or --from-env when setting content on memory-backed nodes.\n\n## Supplemental notes\n\nUse add-note to attach extra detail to primary records when the detail should stay out of normal exports.\n\n## Boundary\n\nThis workflow is semantically about how operators add and enrich memory records, so it belongs in architecture_context as operational context, with code_history only as a supplemental breadcrumb.",
+    "created_at": "2026-04-15T18:14:43Z",
+    "updated_at": "2026-04-15T18:14:43Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "393df": {
+    "id": "393df",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Memory maintenance workflow uses show/query/export confirmation plus scan, verify, and gc at the right choke points",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Confirmation\n\nAfter a mutation, confirm resulting state with show, query, or export depending on whether you need node-level, filtered, or snapshot-level visibility.\n\n## Validation\n\nUse scan after marker edits, verify after structural changes, and gc at commit or cleanup choke points.\n\n## Intent\n\nThese are operational semantics for maintaining trustworthy memory state, not just file-level implementation details.\n\n## Boundary\n\nThis workflow belongs in architecture_context as technical operating context and should exist independently of any specific code_history file breadcrumb.",
+    "created_at": "2026-04-15T18:14:44Z",
+    "updated_at": "2026-04-15T18:14:44Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "3b6dc": {
+    "id": "3b6dc",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Transient session runtime tracks show/export inspection state in temp session files",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Summary\n\nzhar now keeps transient CLI session state outside durable memory under the OS temp directory. The session runtime records shallow and expanded show interactions, surfaces session state in export runtime context, and gates challenge escalation through effective facts such as session_challenge_enabled and session_challenge_agent.",
+    "created_at": "2026-04-15T19:10:57Z",
+    "updated_at": "2026-04-15T19:10:57Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  },
+  "415c5": {
+    "id": "415c5",
+    "group": "architecture_context",
+    "node_type": "tech_setup",
+    "summary": "Session runtime temp cache moved from .zhar/session to zhar_cache/session",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Transient session files now live under the OS temp directory at `zhar_cache/session` instead of `.zhar/session`.\n\nThis avoids collisions with project-root discovery and clarifies that the runtime session store is disposable cache state rather than project memory.",
+    "created_at": "2026-04-15T19:43:13Z",
+    "updated_at": "2026-04-15T19:43:13Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
+  }
+}

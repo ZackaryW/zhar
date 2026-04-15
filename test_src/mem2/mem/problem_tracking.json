@@ -1,0 +1,24 @@
+{
+  "b95f": {
+    "id": "b95f",
+    "group": "problem_tracking",
+    "node_type": "known_issue",
+    "summary": "MemStore.get() scans via index then resolves backend — cross-group queries fan out through _FanoutBackend",
+    "status": "active",
+    "tags": [
+      "performance",
+      "query"
+    ],
+    "source": null,
+    "content": "## Observation\n\nMemStore.get() resolves nodes through the index and cross-group queries fan out through _FanoutBackend. This is acceptable for correctness but leaves a performance and architecture question about how retrieval should scale as the store grows.\n\n## Why It Matters\n\nThe current implementation is simple and keeps group boundaries explicit, but repeated fanout across backends can become a cost center for query-heavy flows, especially when export, verify, and agent context generation touch many groups.\n\n## Current Position\n\nThis is tracked as a low-severity design issue rather than an immediate bug. Any optimization should preserve correctness, backend abstraction, and the existing query semantics before chasing raw speed.\n",
+    "created_at": "2026-04-13T16:39:48Z",
+    "updated_at": "2026-04-14T20:45:40Z",
+    "expires_at": null,
+    "metadata": {
+      "severity": "low",
+      "issue_type": "design",
+      "agent": "claude"
+    },
+    "custom": {}
+  }
+}

@@ -6,6 +6,7 @@ import os
 
 import click
 
+from zhar.cli.serializers import render_json, session_current_to_payload
 from zhar.mem_session.runtime import get_session_runtime, get_suspicious_node_ids, list_project_sessions
 from zhar.mem_session.store import SESSION_DISABLED_ID, delete_session, load_session
 
@@ -43,8 +44,9 @@ def session_adopt_command(session_id: str) -> None:
 
 
 @session_group.command("current")
+@click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.pass_context
-def session_current_command(ctx: click.Context) -> None:
+def session_current_command(ctx: click.Context, output_format: str) -> None:
     """Show the active transient session and its current recorded state."""
     runtime = get_session_runtime(ctx)
     session = load_session(runtime.session_id, base_dir=runtime.session_dir) if runtime.enabled else None
@@ -53,6 +55,18 @@ def session_current_command(ctx: click.Context) -> None:
         sum(1 for state in session.nodes.values() if state.status == "suspicious")
         if session is not None else 0
     )
+    if output_format == "json":
+        click.echo(render_json(session_current_to_payload(
+            session_id=runtime.session_id,
+            enabled=runtime.enabled,
+            project_root=str(runtime.project_root),
+            session_dir=str(runtime.session_dir),
+            shown_nodes=shown_nodes,
+            suspicious_nodes=suspicious_nodes,
+            challenge_enabled=runtime.challenge_enabled,
+            challenge_agent=runtime.challenge_agent,
+        )))
+        return
     click.echo(f"session_id={runtime.session_id}")
     click.echo(f"enabled={str(runtime.enabled).lower()}")
     click.echo(f"project_root={runtime.project_root}")

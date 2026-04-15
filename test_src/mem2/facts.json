@@ -1,0 +1,8 @@
+{
+  "primary_language": "python",
+  "test_runner": "pytest",
+  "package_manager": "uv",
+  "python_min_version": "3.12",
+  "tdd": "true",
+  "repo": "zhar"
+}
