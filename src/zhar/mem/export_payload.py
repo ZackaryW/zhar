@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any
 
 from zhar.cli.serializers import node_to_payload, runtime_blocks_to_payload, session_runtime_to_payload
-from zhar.mem.export import expand_relation_nodes
+from zhar.mem.export import _collect_export_groups, _ordered_group_names, expand_relation_nodes
 from zhar.mem.query import Query
 from zhar.mem.store import MemStore
 from zhar.mem_session.runtime import SessionRuntime
@@ -73,30 +73,30 @@ def export_payload(
     session_runtime: SessionRuntime | None = None,
 ) -> dict[str, Any]:
     """Return structured export data for the requested memory snapshot."""
-    target_groups = groups if groups is not None else [name for name in store.groups if name != "notes"]
+    target_groups = groups if groups is not None else [name for name in store.groups if name not in {"notes", "links"}]
 
     group_payloads: dict[str, Any] = {}
     total_nodes = 0
     runtime_group_payloads: dict[str, Any] = {}
-    for group in target_groups:
-        payload = export_group_payload(
-            store,
-            group,
-            statuses=statuses,
-            tags=tags,
-            relation_depth=relation_depth,
-            include_runtime_context=include_runtime_context,
-            project_root=project_root,
-        )
-        if payload is None:
-            continue
+    grouped_nodes = _collect_export_groups(
+        store,
+        target_groups=target_groups,
+        statuses=statuses,
+        tags=tags,
+        relation_depth=relation_depth,
+    )
+    for group in _ordered_group_names(target_groups, grouped_nodes):
+        nodes = grouped_nodes[group]
         group_payloads[group] = {
-            "count": payload["count"],
-            "nodes": payload["nodes"],
+            "count": len(nodes),
+            "nodes": [node_to_payload(node) for node in nodes],
         }
-        total_nodes += int(payload["count"])
-        if include_runtime_context and "runtime_context" in payload:
-            runtime_group_payloads[group] = payload["runtime_context"]
+        total_nodes += len(nodes)
+        if include_runtime_context:
+            runtime_root = project_root if project_root is not None else store.project_root
+            blocks = store.groups[group].gather_runtime_context(nodes=nodes, project_root=runtime_root)
+            if blocks:
+                runtime_group_payloads[group] = runtime_blocks_to_payload(blocks)
 
     result: dict[str, Any] = {
         "total_nodes": total_nodes,

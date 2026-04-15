@@ -90,6 +90,12 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 | `breaking_change` | yes | `active`, `archived` | `agent`, `commit_hash`, `what_broke`, `migration_note` |
 | `revert_note` | no | `active`, `archived` | `agent`, `commit_hash`, `reverted_commit`, `reason` |
 
+### links
+
+| Type | Memory-backed | Statuses | Metadata |
+|---|---|---|---|
+| `node_link` | no | `active`, `archived` | `agent`, `from_id`, `to_id`, `rel_type` |
+
 ### notes
 
 | Type | Memory-backed | Statuses | Metadata |
@@ -139,12 +145,15 @@ These node types must carry markdown content:
 
 - `zhar query` defaults to all non-`notes` groups unless you pass explicit group/type filters.
 - Use `zhar query --note-depth N` to include attached supplemental notes under matching primary nodes.
-- Use `zhar show <id> --relation-depth N` to append adjacent `architecture_context/component_rel` nodes for a relation record without leaving the seed node's tag boundary.
+- Use `zhar show <id> --relation-depth N` to append related nodes without leaving the seed set's active status and tag boundary.
 - `zhar export` omits the `notes` group by default and exports only each node type's current statuses when `--status` is not provided.
 - Use `zhar export --tag TAG` when you need a namespace- or project-scoped snapshot; repeated `--tag` options are AND-combined.
-- Use `zhar export --relation-depth N` to expand adjacent `architecture_context/component_rel` nodes from the exported seed set.
-- `zhar export --relation-depth N` preserves the active tag and status boundary for expanded nodes; it does not cross into differently tagged relation nodes.
-- Relation-depth expansion is currently limited to `architecture_context/component_rel` adjacency through shared `from_component` / `to_component` endpoints.
+- Use `zhar export --relation-depth N` to expand related nodes from the exported seed set.
+- `zhar export --relation-depth N` preserves the active tag and status boundary for expanded nodes; it does not cross into differently tagged or non-current nodes.
+- Relation-depth expansion uses built-in `links/node_link` edges through `metadata.from_id` and `metadata.to_id`.
+- `component_rel` is not the generic linking mechanism; it remains an architecture node type that explains relationships between components.
+- Dangling links are ignored on read so deleted or filtered targets do not break traversal.
+- Default exports omit the built-in `links` group unless you explicitly request it.
 - Use `zhar export --with-runtime-context` when you want group-defined runtime context blocks included in the output.
 - Group runtime context is complementary live data gathered at export time. It does not mutate durable memory and does not replace the stored node set.
 - When transient session state exists, `zhar export --with-runtime-context` also appends a `Session state` block with `session_id`, shown and suspicious counts, `challenge_enabled`, optional `challenge_agent`, and per-node score lines.

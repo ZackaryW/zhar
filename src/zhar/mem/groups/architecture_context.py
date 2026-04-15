@@ -4,7 +4,7 @@ Node types
 ----------
 architecture     A high-level architecture snapshot or boundary description.
 design_pattern   A documented design pattern used in the project.
-component_rel    A relationship edge between two components.
+component_rel    A descriptive relationship record between two components.
 tech_stack       A technology stack record for a component or area.
 tech_setup       A setup recipe or operational context note.
 tech_constraint  A durable technical constraint.
@@ -34,7 +34,7 @@ class DesignPatternMeta:
 
 @dataclass
 class ComponentRelMeta:
-    """Metadata for a component-to-component relationship."""
+    """Metadata for a descriptive component-to-component relationship record."""
 
     agent: str = ""
     from_component: str = ""

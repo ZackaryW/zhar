@@ -44,53 +44,27 @@ def export_group(
 
     Returns ``""`` for unknown groups or groups with no matching nodes.
     """
-    if group not in store.groups:
-        return ""
-
-    nodes = store.query(Query(
-        groups=[group],
-        statuses=statuses,
-        tags=tags,
-    ))
-    group_def = store.groups[group]
-    if statuses is None:
-        nodes = [node for node in nodes if group_def.is_current_node_for_export(node)]
-    nodes = expand_relation_nodes(
+    grouped_nodes = _collect_export_groups(
         store,
-        group=group,
-        nodes=nodes,
+        target_groups=[group],
         statuses=statuses,
         tags=tags,
         relation_depth=relation_depth,
     )
-    if not nodes:
+    if not grouped_nodes:
         return ""
 
-    nodes = group_def.limit_nodes_for_export(_sort_nodes(nodes))
-    if not nodes:
-        return ""
-
-    lines: list[str] = [f"## {group} ({len(nodes)})"]
-    for node in nodes:
-        lines.append(_format_node_line(node))
-        if node.content:
-            for content_line in node.content.splitlines():
-                lines.append(f"  {content_line}")
-
-    if include_runtime_context:
-        runtime_root = project_root if project_root is not None else store.project_root
-        blocks = group_def.gather_runtime_context(
-            nodes=nodes,
-            project_root=runtime_root,
+    blocks = [
+        _render_group_block(
+            store,
+            actual_group,
+            grouped_nodes[actual_group],
+            include_runtime_context=include_runtime_context,
+            project_root=project_root,
         )
-        if blocks:
-            lines.append("")
-            lines.append("### Runtime context")
-            for block in blocks:
-                lines.append(f"#### {block.title}")
-                for content_line in block.content.splitlines():
-                    lines.append(content_line)
-    return "\n".join(lines)
+        for actual_group in _ordered_group_names([group], grouped_nodes)
+    ]
+    return "\n\n".join(block for block in blocks if block)
 
 
 def export_text(
@@ -108,28 +82,29 @@ def export_text(
 
     Empty groups (no nodes matching the filter) are omitted.
     """
-    target_groups = groups if groups is not None else [name for name in store.groups if name != "notes"]
+    target_groups = groups if groups is not None else [name for name in store.groups if name not in {"notes", "links"}]
+    grouped_nodes = _collect_export_groups(
+        store,
+        target_groups=target_groups,
+        statuses=statuses,
+        tags=tags,
+        relation_depth=relation_depth,
+    )
 
     sections: list[str] = []
     total = 0
-    for group in target_groups:
-        block = export_group(
+    for group in _ordered_group_names(target_groups, grouped_nodes):
+        block = _render_group_block(
             store,
             group,
-            statuses=statuses,
-            tags=tags,
-            relation_depth=relation_depth,
+            grouped_nodes[group],
             include_runtime_context=include_runtime_context,
             project_root=project_root,
         )
-        if block:
-            sections.append(block)
-            # Count nodes from first line "## group (N)"
-            first_line = block.splitlines()[0]
-            try:
-                total += int(first_line.rsplit("(", 1)[1].rstrip(")"))
-            except (IndexError, ValueError):
-                pass
+        if not block:
+            continue
+        sections.append(block)
+        total += len(grouped_nodes[group])
 
     if not sections:
         return "# zhar memory — 0 nodes\n"
@@ -159,103 +134,204 @@ def expand_relation_nodes(
     tags: list[str] | None,
     relation_depth: int,
 ) -> list[Node]:
-    """Expand component relationship nodes within the current export boundary.
+    """Expand related nodes within the current export boundary.
 
-    Expansion is intentionally limited to ``architecture_context/component_rel``
-    nodes. Candidate relation nodes are filtered through the same tag and status
-    selectors as the seed set so namespace and lifecycle boundaries remain hard.
+    Relation-depth uses built-in ``links`` group edges that connect arbitrary
+    node IDs via
+      ``metadata.from_id`` and ``metadata.to_id``
+
+    Missing or dangling link endpoints are ignored on read so traversal stays
+    tolerant of deleted nodes and filtered boundaries.
     """
-    if relation_depth <= 0 or group != "architecture_context":
+    if relation_depth <= 0:
         return nodes
 
-    seed_ids = {node.id for node in nodes if node.node_type == "component_rel"}
+    seed_ids = {node.id for node in nodes}
     if not seed_ids:
         return nodes
 
-    relation_candidates = _relation_candidates(
-        store,
-        statuses=statuses,
-        tags=tags,
+    eligible_nodes = _eligible_expansion_nodes(store, statuses=statuses, tags=tags)
+    expanded_ids = _expand_related_ids(
+        seed_ids=seed_ids,
+        relation_depth=relation_depth,
+        eligible_nodes=eligible_nodes,
+        link_edges=_link_edge_candidates(store, statuses=statuses),
     )
-    if not relation_candidates:
-        return nodes
-
-    expanded_ids = _expand_relation_ids(relation_candidates, seed_ids, relation_depth)
     existing_ids = {node.id for node in nodes}
     expanded_nodes = [
-        node for node in relation_candidates
-        if node.id in expanded_ids and node.id not in existing_ids
+        eligible_nodes[node_id] for node_id in expanded_ids
+        if node_id not in existing_ids and node_id in eligible_nodes
     ]
     return nodes + expanded_nodes
 
 
-def _relation_candidates(
+def _collect_export_groups(
     store: MemStore,
+    *,
+    target_groups: list[str],
+    statuses: list[str] | None,
+    tags: list[str] | None,
+    relation_depth: int,
+) -> dict[str, list[Node]]:
+    """Return exportable nodes grouped by actual group after expansion."""
+    seed_nodes: list[Node] = []
+    for group in target_groups:
+        seed_nodes.extend(_group_seed_nodes(store, group, statuses=statuses, tags=tags))
+
+    if not seed_nodes:
+        return {}
+
+    expanded_nodes = expand_relation_nodes(
+        store,
+        group=target_groups[0] if len(target_groups) == 1 else "*",
+        nodes=seed_nodes,
+        statuses=statuses,
+        tags=tags,
+        relation_depth=relation_depth,
+    )
+    grouped: dict[str, list[Node]] = {}
+    for node in _sort_nodes(expanded_nodes):
+        grouped.setdefault(node.group, []).append(node)
+
+    for group, nodes in list(grouped.items()):
+        grouped[group] = store.groups[group].limit_nodes_for_export(nodes)
+        if not grouped[group]:
+            grouped.pop(group)
+    return grouped
+
+
+def _group_seed_nodes(
+    store: MemStore,
+    group: str,
     *,
     statuses: list[str] | None,
     tags: list[str] | None,
 ) -> list[Node]:
-    """Return relation nodes eligible for export expansion.
-
-    The returned set already honors the requested status and tag filters, plus
-    the group's default current-boundary semantics when no explicit statuses are
-    supplied.
-    """
-    nodes = store.query(Query(
-        groups=["architecture_context"],
-        node_types=["component_rel"],
-        statuses=statuses,
-        tags=tags,
-    ))
-    if statuses is not None:
-        return nodes
-
-    group_def = store.groups["architecture_context"]
-    return [node for node in nodes if group_def.is_current_node_for_export(node)]
+    """Return seed nodes for one export group within the active boundary."""
+    if group not in store.groups:
+        return []
+    nodes = store.query(Query(groups=[group], statuses=statuses, tags=tags))
+    group_def = store.groups[group]
+    if statuses is None:
+        nodes = [node for node in nodes if group_def.is_current_node_for_export(node)]
+    return nodes
 
 
-def _expand_relation_ids(
-    relation_nodes: list[Node],
+def _render_group_block(
+    store: MemStore,
+    group: str,
+    nodes: list[Node],
+    *,
+    include_runtime_context: bool,
+    project_root: Path | None,
+) -> str:
+    """Render one already-collected group block for text export."""
+    if not nodes:
+        return ""
+
+    lines: list[str] = [f"## {group} ({len(nodes)})"]
+    for node in nodes:
+        lines.append(_format_node_line(node))
+        if node.content:
+            for content_line in node.content.splitlines():
+                lines.append(f"  {content_line}")
+
+    if include_runtime_context:
+        runtime_root = project_root if project_root is not None else store.project_root
+        blocks = store.groups[group].gather_runtime_context(nodes=nodes, project_root=runtime_root)
+        if blocks:
+            lines.append("")
+            lines.append("### Runtime context")
+            for block in blocks:
+                lines.append(f"#### {block.title}")
+                for content_line in block.content.splitlines():
+                    lines.append(content_line)
+    return "\n".join(lines)
+
+
+def _ordered_group_names(target_groups: list[str], grouped_nodes: dict[str, list[Node]]) -> list[str]:
+    """Return deterministic group render order for export output."""
+    ordered: list[str] = []
+    for group in target_groups:
+        if group in grouped_nodes and group not in ordered:
+            ordered.append(group)
+    for group in sorted(grouped_nodes):
+        if group not in ordered:
+            ordered.append(group)
+    return ordered
+
+
+def _eligible_expansion_nodes(
+    store: MemStore,
+    *,
+    statuses: list[str] | None,
+    tags: list[str] | None,
+) -> dict[str, Node]:
+    """Return nodes eligible to appear as expanded relation results."""
+    candidate_groups = [name for name in store.groups if name not in {"notes", "links"}]
+    nodes = store.query(Query(groups=candidate_groups, statuses=statuses, tags=tags))
+    eligible: dict[str, Node] = {}
+    for node in nodes:
+        group_def = store.groups[node.group]
+        if statuses is None and not group_def.is_current_node_for_export(node):
+            continue
+        eligible[node.id] = node
+    return eligible
+
+
+def _expand_related_ids(
+    *,
     seed_ids: set[str],
     relation_depth: int,
+    eligible_nodes: dict[str, Node],
+    link_edges: list[Node],
 ) -> set[str]:
-    """Return relation node IDs reachable from *seed_ids* within *relation_depth*.
-
-    Two ``component_rel`` nodes are adjacent when they share at least one
-    component endpoint across ``from_component`` and ``to_component`` metadata.
-    """
-    relation_by_id = {node.id: node for node in relation_nodes}
-    visited = {node_id for node_id in seed_ids if node_id in relation_by_id}
+    """Return related node IDs reachable within the active traversal boundary."""
+    visited = {node_id for node_id in seed_ids if node_id in eligible_nodes}
     frontier = set(visited)
 
     for _ in range(relation_depth):
         if not frontier:
             break
-        frontier_components = set()
-        for node_id in frontier:
-            frontier_components.update(_relation_components(relation_by_id[node_id]))
-
         next_frontier: set[str] = set()
-        for node in relation_nodes:
-            if node.id in visited:
-                continue
-            if frontier_components & _relation_components(node):
-                next_frontier.add(node.id)
-
+        for node_id in frontier:
+            next_frontier |= _link_neighbors(link_edges, node_id)
+        next_frontier = {
+            node_id for node_id in next_frontier
+            if node_id in eligible_nodes and node_id not in visited
+        }
         visited |= next_frontier
         frontier = next_frontier
 
     return visited
 
 
-def _relation_components(node: Node) -> set[str]:
-    """Return the normalized endpoint component names referenced by *node*."""
-    components: set[str] = set()
-    for key in ("from_component", "to_component"):
-        value = str(node.metadata.get(key, "")).strip()
-        if value:
-            components.add(value)
-    return components
+def _link_edge_candidates(
+    store: MemStore,
+    *,
+    statuses: list[str] | None,
+) -> list[Node]:
+    """Return active built-in link-edge nodes."""
+    nodes = store.query(Query(groups=["links"], statuses=statuses))
+    group_def = store.groups["links"]
+    if statuses is None:
+        nodes = [node for node in nodes if group_def.is_current_node_for_export(node)]
+    return nodes
+
+
+def _link_neighbors(link_edges: list[Node], node_id: str) -> set[str]:
+    """Return neighboring node IDs connected by optional link edges."""
+    neighbors: set[str] = set()
+    for edge in link_edges:
+        from_id = str(edge.metadata.get("from_id", "")).strip()
+        to_id = str(edge.metadata.get("to_id", "")).strip()
+        if not from_id or not to_id:
+            continue
+        if from_id == node_id:
+            neighbors.add(to_id)
+        if to_id == node_id:
+            neighbors.add(from_id)
+    return neighbors
 
 
 def _format_node_line(node: Node) -> str:

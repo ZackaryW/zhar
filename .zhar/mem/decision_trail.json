@@ -627,5 +627,42 @@
       "tradeoffs": "Keeps text output stable while adding explicit JSON contracts without parsing text renderers"
     },
     "custom": {}
+  },
+  "44f8b": {
+    "id": "44f8b",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Use an optional links group for generic cross-group relation traversal",
+    "status": "superseded",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T21:26:27Z",
+    "updated_at": "2026-04-15T21:42:59Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "GitHub-Copilot",
+      "alternatives_considered": "base-node-links-field,parallel-memlink-store",
+      "tradeoffs": "keeps-links-optional-and-group-scoped-preserves-existing-store-model-requires-link-group-convention-and-traversal-rules"
+    },
+    "custom": {}
+  },
+  "4768f": {
+    "id": "4768f",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Make links a built-in memory group for relation-depth traversal",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T21:43:06Z",
+    "updated_at": "2026-04-15T21:43:06Z",
+    "expires_at": null,
+    "metadata": {
+      "alternatives_considered": "repo-local-links-group,component_rel-traversal",
+      "tradeoffs": "always-available-generic-edges-simpler-traversal-semantics-keeps-component_rel-descriptive-adds-empty-links-group-to-stats"
+    },
+    "custom": {}
   }
 }

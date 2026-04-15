@@ -173,6 +173,28 @@ class TestMemoryBackedEnforcement:
         assert store.get(n.id).content is None
 
 
+class TestOptionalLinksGroup:
+    def test_links_require_existing_endpoints(self, tmp_path):
+        store = MemStore(tmp_path)
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+        ))
+
+        with pytest.raises(ValueError, match="does not exist"):
+            store.save(make_node(
+                group="links",
+                node_type="node_link",
+                summary="file change -> missing decision",
+                metadata={
+                    "from_id": source.id,
+                    "to_id": "ffff",
+                    "rel_type": "explains",
+                },
+            ))
+
+
 class TestStatusValidation:
     def test_invalid_status_raises(self, store):
         n = make_node(

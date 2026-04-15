@@ -342,7 +342,7 @@ def remove_command(ctx: click.Context, node_id: str) -> None:
 
 @click.command(name="show")
 @click.argument("node_id")
-@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
+@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand related nodes within the active relation boundary up to depth N.")
 @click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.pass_context
 def show_command(ctx: click.Context, node_id: str, relation_depth: int, output_format: str) -> None:
@@ -538,7 +538,7 @@ def scan_command(ctx: click.Context, path: str, ext: tuple[str, ...], dry_run: b
 @click.option("--group", "group", multiple=True, metavar="NAME", help="Limit to specific groups (repeatable).")
 @click.option("--status", multiple=True, metavar="STATUS", help="Limit to specific statuses (default: all).")
 @click.option("--tag", "tag", multiple=True, metavar="TAG", help="Node must have all listed tags (repeatable).")
-@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
+@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand related nodes within the active relation boundary up to depth N.")
 @click.option("--with-runtime-context/--no-runtime-context", default=False, help="Include runtime context gathered from group-defined tools.")
 @click.option("--format", "output_format", type=click.Choice(["text", "json"], case_sensitive=False), default="text", show_default=True, help="Render the output in text or JSON form.")
 @click.option("--out", default=None, type=click.Path(), metavar="FILE", help="Write output to FILE instead of stdout.")

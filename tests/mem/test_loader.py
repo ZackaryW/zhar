@@ -123,6 +123,7 @@ class TestLoadBuiltinGroups:
             "decision_trail",
             "architecture_context",
             "code_history",
+            "links",
             "notes",
         ):
             assert name in result, f"Missing built-in group: {name}"

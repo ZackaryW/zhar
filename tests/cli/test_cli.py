@@ -456,7 +456,7 @@ class TestShow:
         assert "project_dna" in result.output
         assert "core_requirement" in result.output
 
-    def test_show_can_expand_related_component_rel_nodes_within_tag_namespace(self, project, runner):
+    def test_show_does_not_expand_component_rel_nodes_without_links(self, project, runner):
         store = MemStore(project)
         base = make_node(
             group="architecture_context",
@@ -499,8 +499,7 @@ class TestShow:
 
         assert result.exit_code == 0, result.output
         assert "web -> api" in result.output
-        assert "related nodes" in result.output.lower()
-        assert "api -> db" in result.output
+        assert "api -> db" not in result.output
         assert "api -> shared-db" not in result.output
 
     def test_show_relation_depth_is_noop_for_non_relation_nodes(self, project, runner):
@@ -519,6 +518,37 @@ class TestShow:
         assert result.exit_code == 0, result.output
         assert "A requirement" in result.output
         assert "related nodes" not in result.output.lower()
+
+    def test_show_can_expand_related_nodes_through_built_in_links_group(self, project, runner):
+        store = MemStore(project)
+        base = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Linked decision context",
+        ))
+        store.save(make_node(
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
+            metadata={
+                "from_id": base.id,
+                "to_id": target.id,
+                "rel_type": "explains",
+            },
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "show", base.id, "--relation-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "cli export wiring" in result.output
+        assert "Linked decision context" in result.output
 
     def test_show_unknown_id_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, ["--root", str(project), "show", "zzzz"])
@@ -1248,8 +1278,15 @@ class TestExport:
         assert "Web requirement" in result.output
         assert "API issue" not in result.output
 
-    def test_export_can_expand_component_relations_within_tag_namespace(self, project, runner):
+    def test_export_does_not_pull_component_rel_nodes_into_unrelated_seed_groups(self, project, runner):
         store = MemStore(project)
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Web requirement",
+            tags=["project:web"],
+            content="## Why\n\nNeeded.",
+        ))
         store.save(make_node(
             group="architecture_context",
             node_type="component_rel",
@@ -1272,27 +1309,50 @@ class TestExport:
                 "rel_type": "calls",
             },
         ))
-        store.save(make_node(
-            group="architecture_context",
-            node_type="component_rel",
-            summary="api -> shared-db",
-            tags=["project:api"],
-            metadata={
-                "from_component": "api",
-                "to_component": "shared-db",
-                "rel_type": "calls",
-            },
-        ))
 
         result = runner.invoke(cli, [
-            "--root", str(project), "export", "--group", "architecture_context",
+            "--root", str(project), "export", "--group", "project_dna",
             "--tag", "project:web", "--relation-depth", "1",
         ])
 
         assert result.exit_code == 0, result.output
-        assert "web -> api" in result.output
-        assert "api -> db" in result.output
-        assert "api -> shared-db" not in result.output
+        assert "Web requirement" in result.output
+        assert "api -> db" not in result.output
+        assert "web -> api" not in result.output
+
+    def test_export_can_expand_across_built_in_links_group(self, project, runner):
+        store = MemStore(project)
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+            tags=["project:web"],
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Linked decision context",
+            tags=["project:web"],
+        ))
+        store.save(make_node(
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
+            metadata={
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
+            },
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "export", "--group", "code_history",
+            "--tag", "project:web", "--relation-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "cli export wiring" in result.output
+        assert "Linked decision context" in result.output
 
 
 class TestQueryNotes:

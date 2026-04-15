@@ -25,12 +25,12 @@
     "group": "architecture_context",
     "node_type": "architecture",
     "summary": "Relation expansion is currently limited to component_rel adjacency and depends on shared component identity for broader traversal",
-    "status": "active",
+    "status": "stale",
     "tags": [],
     "source": null,
-    "content": "## Context\n\nRecent export and show relation-depth work changed the effective architecture semantics of architecture_context, not just CLI file history.\n\n## Current rule\n\nNamespace-scoped traversal for export and show currently starts from the seed set and traverses only architecture_context/component_rel nodes through shared from_component / to_component endpoints.\n\n## Boundary rule\n\nExpanded nodes stay inside the active tag boundary of the seed selection. Traversal does not cross into differently tagged relation nodes.\n\n## Constraint\n\nBroader traversal across other node types requires a shared component identity in their metadata. Without that anchor, relation expansion cannot safely connect non-relation nodes into the same component neighborhood.\n\n## Implication\n\nChanges to namespacing or relation traversal behavior should be recorded in architecture_context first, with code_history used only as supplemental file-level breadcrumbing.",
+    "content": "## Context\n\nRelation-depth expansion now supports both the legacy architecture-local relation model and an optional generic cross-group link model.\n\n## Current rule\n\nNamespace-scoped traversal for show and export starts from the seed set and keeps the active status and tag boundary hard.\n\n## Mechanisms\n\n- `architecture_context/component_rel` still expands through shared `from_component` / `to_component` endpoints.\n- An optional custom `links` group can add generic node-to-node edges, typically with `links/node_link` records that carry `metadata.from_id` and `metadata.to_id`.\n\n## Optional-group behavior\n\nIf the `links` group is not loaded, relation-depth silently ignores that mechanism. If a saved link edge points at a node that is no longer available, read paths skip the dangling edge instead of failing.\n\n## Write-time integrity\n\nWhen the `links` group is loaded, link writes stay strict: new link nodes must declare existing endpoint IDs.\n\n## Export behavior\n\nDefault exports omit the optional `links` group itself, but relation-depth can still use its edges to bring linked nodes from other loaded groups into the rendered result under their actual group headers.\n\n## Implication\n\nBroader relation webs now belong to normal memory traversal semantics without requiring a base-node links field or a second storage subsystem.",
     "created_at": "2026-04-15T18:08:22Z",
-    "updated_at": "2026-04-15T18:12:14Z",
+    "updated_at": "2026-04-15T21:26:44Z",
     "expires_at": null,
     "metadata": {
       "agent": "copilot"
@@ -103,6 +103,38 @@
     "metadata": {
       "agent": "copilot"
     },
+    "custom": {}
+  },
+  "45939": {
+    "id": "45939",
+    "group": "architecture_context",
+    "node_type": "architecture",
+    "summary": "Relation-depth now supports optional links-group edges in addition to component_rel adjacency",
+    "status": "stale",
+    "tags": [],
+    "source": null,
+    "content": "## Context\n\nRelation-depth expansion now supports both the legacy architecture-local relation model and an optional generic cross-group link model.\n\n## Current rule\n\nNamespace-scoped traversal for show and export starts from the seed set and keeps the active status and tag boundary hard.\n\n## Mechanisms\n\n- `architecture_context/component_rel` remains a descriptive architecture node type that explains relationships between components.\n- `component_rel` neighborhood expansion still works through shared `from_component` / `to_component` endpoints, but that is separate from generic node linking.\n- An optional custom `links` group can add generic node-to-node edges, typically with `links/node_link` records that carry `metadata.from_id` and `metadata.to_id`.\n\n## Optional-group behavior\n\nIf the `links` group is not loaded, relation-depth silently ignores that mechanism. If a saved link edge points at a node that is no longer available, read paths skip the dangling edge instead of failing.\n\n## Write-time integrity\n\nWhen the `links` group is loaded, link writes stay strict: new link nodes must declare existing endpoint IDs.\n\n## Export behavior\n\nDefault exports omit the optional `links` group itself, but relation-depth can still use its edges to bring linked nodes from other loaded groups into the rendered result under their actual group headers.\n\n## Implication\n\nBroader relation webs now belong to normal memory traversal semantics without requiring a base-node links field or a second storage subsystem.",
+    "created_at": "2026-04-15T21:26:44Z",
+    "updated_at": "2026-04-15T21:42:59Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "GitHub-Copilot"
+    },
+    "custom": {}
+  },
+  "465f4": {
+    "id": "465f4",
+    "group": "architecture_context",
+    "node_type": "architecture",
+    "summary": "Relation-depth traversal now uses built-in links edges",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "Relation-depth traversal for zhar show and zhar export now uses the built-in links/node_link group. component_rel remains a descriptive architecture node type rather than a traversal mechanism. The links group is always available without repo-local initialization, traversal keeps the active status and tag boundary hard, dangling links are ignored on read, and writes still require existing endpoints. Default exports omit the links group unless it is requested explicitly.",
+    "created_at": "2026-04-15T21:43:06Z",
+    "updated_at": "2026-04-15T21:43:06Z",
+    "expires_at": null,
+    "metadata": {},
     "custom": {}
   }
 }

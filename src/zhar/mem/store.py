@@ -203,6 +203,8 @@ class MemStore:
 
         if node.group == "notes" and node.node_type == "note":
             self._validate_note_targets(node)
+        if node.group == "links":
+            self._validate_link_targets(node)
 
         # content must be None for non-memory-backed types
         if node.content is not None and not type_def.memory_backed:
@@ -234,6 +236,18 @@ class MemStore:
                 raise ValueError(f"Note target '{target_id}' does not exist.")
             if target_ref.group == "notes":
                 raise ValueError("Note nodes cannot target other note nodes.")
+
+    def _validate_link_targets(self, node: Node) -> None:
+        """Validate that link nodes declare existing endpoint node IDs."""
+        from_id = str(node.metadata.get("from_id", "")).strip()
+        to_id = str(node.metadata.get("to_id", "")).strip()
+        if not from_id or not to_id:
+            raise ValueError("Link nodes must declare both metadata.from_id and metadata.to_id.")
+
+        for endpoint_id in (from_id, to_id):
+            target_ref = self.index.get(endpoint_id)
+            if target_ref is None:
+                raise ValueError(f"Link target '{endpoint_id}' does not exist.")
 
     def _rebuild_index(self) -> None:
         """Populate the index from all backends (called once on startup)."""

@@ -20,6 +20,7 @@ _EXPECTED_TOTALS = {
     "decision_trail": 16,
     "architecture_context": 0,
     "code_history": 18,
+    "links": 0,
     "notes": 0,
 }
 _EXPECTED_MISSING_CONTENT_IDS = {
@@ -88,6 +89,7 @@ def test_cli_reads_the_copied_fixture_snapshot() -> None:
     assert "project_dna  (7)" in status_result.output
     assert "architecture_context  (0)" in status_result.output
     assert "code_history  (18)" in status_result.output
+    assert "links  (0)" in status_result.output
 
     assert show_result.exit_code == 0, show_result.output
     assert "Use group-clustered JSON files instead of a flat zmem-style graph" in show_result.output
@@ -119,135 +121,144 @@ def test_export_and_verify_match_the_copied_fixture() -> None:
 
 
 def test_cli_export_applies_tag_namespace_and_relation_depth_end_to_end(tmp_path) -> None:
-    """CLI export should expand connected relation nodes without crossing tag boundaries."""
+    """CLI export should expand built-in link edges without crossing tag boundaries."""
     runner = CliRunner()
     store = MemStore(tmp_path / ".zhar")
 
-    store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="web -> api",
+    source = store.save(make_node(
+        group="code_history",
+        node_type="file_change",
+        summary="web export wiring",
         tags=["project:web"],
-        metadata={
-            "from_component": "web",
-            "to_component": "api",
-            "rel_type": "calls",
-        },
     ))
-    store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="api -> db",
+    target = store.save(make_node(
+        group="decision_trail",
+        node_type="decision",
+        summary="Export decision context",
         tags=["project:web"],
-        metadata={
-            "from_component": "api",
-            "to_component": "db",
-            "rel_type": "calls",
-        },
     ))
-    store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="api -> shared-db",
+    other = store.save(make_node(
+        group="decision_trail",
+        node_type="decision",
+        summary="API-only decision context",
         tags=["project:api"],
+    ))
+    store.save(make_node(
+        group="links",
+        node_type="node_link",
+        summary="web export wiring -> decision",
         metadata={
-            "from_component": "api",
-            "to_component": "shared-db",
-            "rel_type": "calls",
+            "from_id": source.id,
+            "to_id": target.id,
+            "rel_type": "explains",
+        },
+    ))
+    store.save(make_node(
+        group="links",
+        node_type="node_link",
+        summary="web export wiring -> api-only decision",
+        metadata={
+            "from_id": source.id,
+            "to_id": other.id,
+            "rel_type": "explains",
         },
     ))
 
     result = runner.invoke(cli, [
         "--root", str(store.root), "export",
-        "--group", "architecture_context",
+        "--group", "code_history",
         "--tag", "project:web",
         "--relation-depth", "1",
     ])
 
     assert result.exit_code == 0, result.output
-    assert "web -> api" in result.output
-    assert "api -> db" in result.output
-    assert "api -> shared-db" not in result.output
+    assert "web export wiring" in result.output
+    assert "Export decision context" in result.output
+    assert "API-only decision context" not in result.output
 
 
 def test_export_text_applies_namespace_before_relation_expansion_end_to_end(tmp_path) -> None:
-    """Direct export should keep expansion inside the active namespace boundary."""
+    """Direct export should keep built-in link expansion inside the active namespace boundary."""
     store = MemStore(tmp_path / ".zhar")
 
-    store.save(make_node(
+    source = store.save(make_node(
         group="project_dna",
         node_type="core_requirement",
         summary="Web requirement",
         tags=["project:web"],
         content="## Why\n\nWeb only.",
     ))
-    store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="web -> api",
+    target = store.save(make_node(
+        group="decision_trail",
+        node_type="decision",
+        summary="Web export decision",
         tags=["project:web"],
-        metadata={
-            "from_component": "web",
-            "to_component": "api",
-            "rel_type": "calls",
-        },
     ))
     store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="api -> shared-db",
+        group="decision_trail",
+        node_type="decision",
+        summary="API export decision",
         tags=["project:api"],
+    ))
+    store.save(make_node(
+        group="links",
+        node_type="node_link",
+        summary="web requirement -> web decision",
         metadata={
-            "from_component": "api",
-            "to_component": "shared-db",
-            "rel_type": "calls",
+            "from_id": source.id,
+            "to_id": target.id,
+            "rel_type": "explains",
         },
     ))
 
     exported = export_text(store, tags=["project:web"], relation_depth=2, project_root=tmp_path)
 
     assert "Web requirement" in exported
-    assert "web -> api" in exported
-    assert "api -> shared-db" not in exported
+    assert "Web export decision" in exported
+    assert "API export decision" not in exported
 
 
 def test_cli_show_applies_relation_expansion_with_tag_boundary_end_to_end(tmp_path) -> None:
-    """CLI show should expand connected relation nodes without crossing the seed tag boundary."""
+    """CLI show should expand built-in links without crossing the seed tag boundary."""
     runner = CliRunner()
     store = MemStore(tmp_path / ".zhar")
 
-    base = make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="web -> api",
+    base = store.save(make_node(
+        group="code_history",
+        node_type="file_change",
+        summary="web show wiring",
         tags=["project:web"],
-        metadata={
-            "from_component": "web",
-            "to_component": "api",
-            "rel_type": "calls",
-        },
-    )
-    store.save(base)
+    ))
+    linked = store.save(make_node(
+        group="decision_trail",
+        node_type="decision",
+        summary="Show decision context",
+        tags=["project:web"],
+    ))
+    other = store.save(make_node(
+        group="decision_trail",
+        node_type="decision",
+        summary="API-only show decision",
+        tags=["project:api"],
+    ))
     store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="api -> db",
-        tags=["project:web"],
+        group="links",
+        node_type="node_link",
+        summary="web show wiring -> decision",
         metadata={
-            "from_component": "api",
-            "to_component": "db",
-            "rel_type": "calls",
+            "from_id": base.id,
+            "to_id": linked.id,
+            "rel_type": "explains",
         },
     ))
     store.save(make_node(
-        group="architecture_context",
-        node_type="component_rel",
-        summary="api -> shared-db",
-        tags=["project:api"],
+        group="links",
+        node_type="node_link",
+        summary="web show wiring -> api-only decision",
         metadata={
-            "from_component": "api",
-            "to_component": "shared-db",
-            "rel_type": "calls",
+            "from_id": base.id,
+            "to_id": other.id,
+            "rel_type": "explains",
         },
     ))
 
@@ -256,6 +267,6 @@ def test_cli_show_applies_relation_expansion_with_tag_boundary_end_to_end(tmp_pa
     ])
 
     assert result.exit_code == 0, result.output
-    assert "web -> api" in result.output
-    assert "api -> db" in result.output
-    assert "api -> shared-db" not in result.output
+    assert "web show wiring" in result.output
+    assert "Show decision context" in result.output
+    assert "API-only show decision" not in result.output

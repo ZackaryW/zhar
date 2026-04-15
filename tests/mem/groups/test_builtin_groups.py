@@ -9,6 +9,7 @@ from zhar.mem.group import GroupDef, validate_node_metadata
     "zhar.mem.groups.decision_trail",
     "zhar.mem.groups.architecture_context",
     "zhar.mem.groups.code_history",
+    "zhar.mem.groups.links",
     "zhar.mem.groups.notes",
 ])
 def builtin_group(request):
@@ -151,6 +152,18 @@ class TestArchitectureContext:
         expected = {"architecture", "design_pattern", "tech_setup", "tech_constraint"}
         actual = {nt.name for nt in GROUP.node_types if nt.memory_backed}
         assert expected == actual
+
+
+class TestLinks:
+    def test_has_expected_types(self):
+        from zhar.mem.groups.links import GROUP
+        assert {"node_link"} == set(GROUP.type_names)
+
+    def test_node_link_requires_string_endpoints(self):
+        from zhar.mem.groups.links import GROUP
+        nt = GROUP.get_type("node_link")
+        assert validate_node_metadata(nt, {"from_id": "ab12", "to_id": "cd34"}) == []
+        assert validate_node_metadata(nt, {"from_id": 123})
 
 
 class TestNotes:

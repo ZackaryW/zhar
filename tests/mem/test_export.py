@@ -200,8 +200,15 @@ class TestExportGroup:
         assert "## code_history (15)" in out
         assert out.count("file_change ·") == 15
 
-    def test_relation_depth_expands_adjacent_component_rel_nodes(self, tmp_path):
+    def test_relation_depth_does_not_pull_component_rel_nodes_into_unrelated_exports(self, tmp_path):
         store = MemStore(tmp_path / ".zhar")
+        store.save(make_node(
+            group="project_dna",
+            node_type="core_requirement",
+            summary="Web requirement",
+            tags=["project:web"],
+            content="## Why\n\nNeeded.",
+        ))
         store.save(make_node(
             group="architecture_context",
             node_type="component_rel",
@@ -227,48 +234,144 @@ class TestExportGroup:
 
         out = export_group(
             store,
-            "architecture_context",
+            "project_dna",
             tags=["project:web"],
             relation_depth=1,
         )
 
-        assert "web -> api" in out
-        assert "api -> db" in out
+        assert "Web requirement" in out
+        assert "api -> db" not in out
+        assert "web -> api" not in out
 
-    def test_relation_depth_respects_tag_boundary_for_connected_rel_nodes(self, tmp_path):
+    def test_relation_depth_expands_across_built_in_links_group(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+            tags=["project:web"],
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Export should include linked decision context",
+            tags=["project:api"],
+        ))
+        store.save(make_node(
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
+            metadata={
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
+            },
+        ))
+
+        out = export_text(store, groups=["code_history"], tags=["project:web"], relation_depth=1)
+
+        assert "cli export wiring" in out
+        assert "Export should include linked decision context" not in out
+
+    def test_relation_depth_silently_ignores_absent_link_nodes(self, tmp_path):
         store = MemStore(tmp_path / ".zhar")
         store.save(make_node(
-            group="architecture_context",
-            node_type="component_rel",
-            summary="web -> api",
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+        ))
+
+        out = export_text(store, groups=["code_history"], relation_depth=1)
+
+        assert "cli export wiring" in out
+
+    def test_relation_depth_expands_across_built_in_links_group_with_matching_tags(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
             tags=["project:web"],
-            metadata={
-                "from_component": "web",
-                "to_component": "api",
-                "rel_type": "calls",
-            },
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="Export should include linked decision context",
+            tags=["project:web"],
         ))
         store.save(make_node(
-            group="architecture_context",
-            node_type="component_rel",
-            summary="api -> shared-db",
-            tags=["project:api"],
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
             metadata={
-                "from_component": "api",
-                "to_component": "shared-db",
-                "rel_type": "calls",
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
             },
         ))
 
-        out = export_group(
-            store,
-            "architecture_context",
-            tags=["project:web"],
-            relation_depth=2,
-        )
+        out = export_text(store, groups=["code_history"], tags=["project:web"], relation_depth=1)
 
-        assert "web -> api" in out
-        assert "api -> shared-db" not in out
+        assert "cli export wiring" in out
+        assert "Export should include linked decision context" in out
+
+    def test_relation_depth_respects_tag_boundary_for_linked_nodes(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+            tags=["project:web"],
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="linked decision",
+            tags=["project:api"],
+        ))
+        store.save(make_node(
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
+            metadata={
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
+            },
+        ))
+        out = export_text(store, groups=["code_history"], tags=["project:web"], relation_depth=1)
+
+        assert "cli export wiring" in out
+        assert "linked decision" not in out
+
+    def test_relation_depth_skips_dangling_links_silently(self, tmp_path):
+        store = MemStore(tmp_path / ".zhar")
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="linked decision",
+        ))
+        link = store.save(make_node(
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
+            metadata={
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
+            },
+        ))
+        store.delete(target.id)
+
+        out = export_text(store, groups=["code_history"], relation_depth=1)
+
+        assert "cli export wiring" in out
+        assert "linked decision" not in out
 
 
 # ── export_text ───────────────────────────────────────────────────────────────
@@ -344,35 +447,35 @@ class TestExportText:
 
         assert out == "# zhar memory — 0 nodes\n"
 
-    def test_relation_depth_expands_component_rel_nodes_in_full_export(self, tmp_path):
+    def test_relation_depth_expands_linked_nodes_in_full_export(self, tmp_path):
         store = MemStore(tmp_path / ".zhar")
-        store.save(make_node(
-            group="architecture_context",
-            node_type="component_rel",
-            summary="web -> api",
+        source = store.save(make_node(
+            group="code_history",
+            node_type="file_change",
+            summary="cli export wiring",
             tags=["project:web"],
-            metadata={
-                "from_component": "web",
-                "to_component": "api",
-                "rel_type": "calls",
-            },
+        ))
+        target = store.save(make_node(
+            group="decision_trail",
+            node_type="decision",
+            summary="linked decision context",
+            tags=["project:web"],
         ))
         store.save(make_node(
-            group="architecture_context",
-            node_type="component_rel",
-            summary="api -> db",
-            tags=["project:web"],
+            group="links",
+            node_type="node_link",
+            summary="file change -> decision",
             metadata={
-                "from_component": "api",
-                "to_component": "db",
-                "rel_type": "calls",
+                "from_id": source.id,
+                "to_id": target.id,
+                "rel_type": "explains",
             },
         ))
 
         out = export_text(store, tags=["project:web"], relation_depth=1)
 
-        assert "web -> api" in out
-        assert "api -> db" in out
+        assert "cli export wiring" in out
+        assert "linked decision context" in out
 
     def test_includes_header_with_node_count(self, store):
         out = export_text(store)
