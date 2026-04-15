@@ -20,5 +20,28 @@
       "agent": "claude"
     },
     "custom": {}
+  },
+  "43e43": {
+    "id": "43e43",
+    "group": "problem_tracking",
+    "node_type": "known_issue",
+    "summary": "Repo zhar memory instruction under-specifies env-backed body input and Literal metadata constraints",
+    "status": "active",
+    "tags": [
+      "memory",
+      "guidance",
+      "cli"
+    ],
+    "source": null,
+    "content": "## Problem\n\nThe repo-local zhar memory instruction does not make the env-backed body contract explicit enough for agents.\n\n## Existing durable context\n\n- architecture_context/38680 already records that memory mutation supports literal bodies, stdin, and env-backed input.\n- decision_trail/3f2ae records that CLI body staging supports `--content-var` and attached-note creation for non-memory-backed `add` targets.\n- notes/40d23 already states that this surface reads environment variables only and that PowerShell must use `$env:NAME`, not `$NAME`.\n- decision_trail/1156 records that metadata validation uses dataclass field introspection and enforces `Literal` constraints.\n\n## Failure shape\n\nAgents still misread `--from-env NAME` as if it accepted a shell-local variable value instead of an environment-variable name. They also infer free-form metadata values for `decision_trail/research_finding.outcome`, even though runtime only accepts `adopted`, `rejected`, or `deferred`.\n\n## Impact\n\nThis causes avoidable zhar add/note failures while following the instruction text, especially during memory bootstrapping and research-finding creation.",
+    "created_at": "2026-04-15T20:24:32Z",
+    "updated_at": "2026-04-15T20:24:32Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "GitHub-Copilot",
+      "severity": "med",
+      "issue_type": "bug"
+    },
+    "custom": {}
   }
 }

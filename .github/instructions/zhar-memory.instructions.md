@@ -15,7 +15,9 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 ## Safe Mutation Rules
 
 - Use `zhar add <group> <node_type> ...` for new nodes.
-- Use `zhar add ... --content TEXT`, `--from-env NAME`, or `--content-var NAME` to supply a body at creation time.
+- Use `zhar add ... --content TEXT` when the markdown body is already available as a literal argument; use `--content -` to read the body from stdin.
+- Use `zhar add ... --from-env NAME` or `--content-var NAME` only when `NAME` is an existing environment variable that contains the full body text.
+- In PowerShell, set `$env:NAME = @'...'@` before invoking zhar; do not pass a shell-local `$NAME` variable to `--from-env` unless that value is itself the name of an existing environment variable.
 - For non-memory-backed node types, `zhar add ... --from-env NAME` and `--content-var NAME` create an attached supplemental `notes/note` record instead of inline node content.
 - Use `zhar set-status <id> <status>` to move an existing node through its valid lifecycle states.
 - Use `zhar note <id> "..."` for a literal body, `zhar note <id> -` to read from stdin, or `zhar note <id> --from-env NAME` / `--content-var NAME` to read the body from an environment variable.
@@ -34,6 +36,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 - `code_history` is complementary memory. It should capture file/function/breaking breadcrumbs, not replace the owning semantic group for architectural, workflow, or decision-level changes.
 - Singleton node types may have at most one active node.
 - Facts are always string-to-string across project, global, and effective scopes.
+- Metadata is validated against each node type's dataclass fields. `Literal`-backed metadata rejects free-form values, so use the documented value sets below or verify the group definition/tests before inventing a value.
 - `orjson` is the only JSON serializer used by zhar.
 - `.zhar/` is committed to source control. Only `.zhar/**/__pycache__/` is ignored.
 - The `notes` group is supplemental memory. It attaches to primary nodes through `metadata.target_ids` and is excluded from normal exports.
@@ -45,7 +48,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 | Type | Singleton | Memory-backed | Statuses | Metadata |
 |---|---|---|---|---|
 | `core_goal` | yes | no | `active`, `archived` | `agent` |
-| `core_requirement` | no | yes | `active`, `archived` | `agent`, `priority` |
+| `core_requirement` | no | yes | `active`, `archived` | `agent`, `priority (low|med|high)` |
 | `product_context` | no | yes | `active`, `archived` | `agent`, `audience` |
 | `stakeholder` | no | no | `active`, `archived` | `agent`, `role`, `authority_scope` |
 
@@ -53,7 +56,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 
 | Type | Memory-backed | Statuses | Metadata |
 |---|---|---|---|
-| `known_issue` | yes | `active`, `resolved`, `archived` | `agent`, `severity`, `issue_type`, `commit_hash` |
+| `known_issue` | yes | `active`, `resolved`, `archived` | `agent`, `severity (low|med|high|critical)`, `issue_type (bug|debt|design)`, `commit_hash` |
 | `blocked` | no | `active`, `resolved` | `agent`, `blocker_ref` |
 
 ### decision_trail
@@ -63,7 +66,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 | `adr` | yes | `proposed`, `accepted`, `superseded` | `agent` |
 | `decision` | no | `active`, `superseded`, `archived` | `agent`, `commit_hash`, `alternatives_considered`, `tradeoffs` |
 | `lesson_learned` | yes | `active`, `archived` | `agent`, `trigger_event` |
-| `research_finding` | yes | `active`, `archived` | `agent`, `outcome`, `source_ref` |
+| `research_finding` | yes | `active`, `archived` | `agent`, `outcome (adopted|rejected|deferred)`, `source_ref` |
 
 ### architecture_context
 
@@ -74,15 +77,15 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 | `component_rel` | no | `active`, `deprecated`, `archived` | `agent`, `from_component`, `to_component`, `rel_type`, `contract` |
 | `tech_stack` | no | `active`, `stale`, `archived` | `agent`, `language`, `framework`, `version` |
 | `tech_setup` | yes | `active`, `stale`, `archived` | `agent` |
-| `tech_constraint` | yes | `active`, `archived` | `agent`, `category` |
-| `env_config` | no | `active`, `stale`, `archived` | `agent`, `env` |
+| `tech_constraint` | yes | `active`, `archived` | `agent`, `category (perf|security|compliance|budget)` |
+| `env_config` | no | `active`, `stale`, `archived` | `agent`, `env (dev|staging|prod)` |
 | `external_dep` | no | `active`, `deprecated`, `archived` | `agent`, `service_name`, `api_version`, `failure_modes` |
 
 ### code_history
 
 | Type | Memory-backed | Statuses | Metadata |
 |---|---|---|---|
-| `file_change` | no | `active`, `stale`, `archived` | `agent`, `commit_hash`, `path`, `significance` |
+| `file_change` | no | `active`, `stale`, `archived` | `agent`, `commit_hash`, `path`, `significance (breaking|refactor|patch|feature)` |
 | `function_change` | no | `active`, `stale`, `archived` | `agent`, `commit_hash`, `function_name`, `affected_callsites` |
 | `breaking_change` | yes | `active`, `archived` | `agent`, `commit_hash`, `what_broke`, `migration_note` |
 | `revert_note` | no | `active`, `archived` | `agent`, `commit_hash`, `reverted_commit`, `reason` |

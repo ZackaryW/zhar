@@ -45,9 +45,9 @@
     "status": "active",
     "tags": [],
     "source": null,
-    "content": "## Scope\n\nThis workflow covers durable memory mutations performed through the CLI rather than file-level implementation details.\n\n## Mutation inputs\n\nUse literal body text, stdin, or --from-env when setting content on memory-backed nodes.\n\n## Supplemental notes\n\nUse add-note to attach extra detail to primary records when the detail should stay out of normal exports.\n\n## Boundary\n\nThis workflow is semantically about how operators add and enrich memory records, so it belongs in architecture_context as operational context, with code_history only as a supplemental breadcrumb.",
+    "content": "## Scope\n\nThis workflow covers durable memory mutations performed through the CLI rather than file-level implementation details.\n\n## Mutation inputs\n\n- Use `--content TEXT` when you already have the literal markdown body in the command invocation.\n- Use `--content -` to read the body from stdin.\n- Use `--from-env NAME` or `--content-var NAME` only when `NAME` is an environment variable that already contains the full body text.\n\n## Shell rule\n\nThis surface reads environment variables, not shell-local variables. In PowerShell, set `$env:NAME = @'...'@` before invoking zhar. Passing `$NAME` to `--from-env` is wrong unless that value is itself the name of an existing environment variable.\n\n## Non-memory-backed add behavior\n\nFor non-memory-backed node types, `zhar add ... --from-env NAME` and `zhar add ... --content-var NAME` create an attached `notes/note` record automatically instead of inline node content.\n\n## Metadata rule\n\nWhen a metadata field is backed by a `Literal` constraint, operator-facing guidance should enumerate the accepted values. For `decision_trail/research_finding`, the allowed `outcome` values are `adopted`, `rejected`, or `deferred`.\n\n## Boundary\n\nThis workflow is semantically about how operators add and enrich memory records, so it belongs in architecture_context as operational context, with code_history only as a supplemental breadcrumb.",
     "created_at": "2026-04-15T18:14:43Z",
-    "updated_at": "2026-04-15T18:14:43Z",
+    "updated_at": "2026-04-15T20:24:33Z",
     "expires_at": null,
     "metadata": {
       "agent": "copilot"
