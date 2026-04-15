@@ -53,7 +53,7 @@ def export_group(
     group_def = store.groups[group]
     if statuses is None:
         nodes = [node for node in nodes if group_def.is_current_node_for_export(node)]
-    nodes = _expand_relation_nodes(
+    nodes = expand_relation_nodes(
         store,
         group=group,
         nodes=nodes,
@@ -142,7 +142,7 @@ def _sort_nodes(nodes: list[Node]) -> list[Node]:
     return sorted(nodes, key=lambda n: (n.node_type, n.created_at))
 
 
-def _expand_relation_nodes(
+def expand_relation_nodes(
     store: MemStore,
     *,
     group: str,

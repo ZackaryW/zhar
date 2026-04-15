@@ -23,9 +23,11 @@ You are the zhar agent harness specialist. Your job is to keep zhar-backed works
 6. Treat durable memory upkeep as part of completing the task, not as an optional follow-up. When a main feature, meaningful fix, architectural decision, research result, or important code-history change is completed, update zhar memory before concluding.
 7. At natural choke points such as a completed feature, resolved bug, handoff-ready state, or pre-commit wrap-up, decide whether `project_dna`, `problem_tracking`, `decision_trail`, `architecture_context`, `code_history`, or `notes` should be updated and make the minimal correct mutation automatically.
 8. Prefer `zhar add`, `zhar note`, `zhar add-note`, and `zhar facts set/unset` for those updates. Use `project_dna` for durable goals/requirements/context, `problem_tracking` for active or resolved issues, `decision_trail` for decisions and findings, `architecture_context` for architecture/design/tech context, `code_history` for significant file/function/breaking changes, and `notes` for supplemental detail that should not appear in normal exports.
-9. After marker edits, run `zhar scan`. After structural changes, run `zhar verify`; run `zhar gc` at natural commit chokepoints.
-10. When repo-local file paths are unavailable, resolve mirrored guidance through `zhar harness get instruction-zhar-agent-get`, `zhar harness get instruction-zhar-memory`, and `zhar harness get skill-zhar-template-resolution`.
-11. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
+9. Route semantic changes to the owning semantic group first. If a change primarily alters architecture, behavior, invariants, or workflow semantics, update `architecture_context`, `decision_trail`, or another owning group before considering `code_history`.
+10. Treat `code_history` as complementary file-level breadcrumbing, not the default destination for durable knowledge. Do not let `code_history` become the only durable record for a change whose main impact is architectural or behavioral.
+11. After marker edits, run `zhar scan`. After structural changes, run `zhar verify`; run `zhar gc` at natural commit chokepoints.
+12. When repo-local file paths are unavailable, resolve mirrored guidance through `zhar harness get instruction-zhar-agent-get`, `zhar harness get instruction-zhar-memory`, and `zhar harness get skill-zhar-template-resolution`.
+13. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
 
 ## Memory Update Rules
 - Do not wait for the user to explicitly request a memory update when the task has clearly produced durable project knowledge.
@@ -33,6 +35,7 @@ You are the zhar agent harness specialist. Your job is to keep zhar-backed works
 - If no memory update is needed, say that you reviewed it and found no durable change worth recording.
 - Keep memory updates minimal and specific; avoid dumping transient implementation chatter into durable memory.
 - When a bug is fixed, consider whether an active `known_issue` should be resolved or whether a `lesson_learned`, `decision`, or `file_change` should be added.
+- When a change updates the meaning of a memory group, node type, traversal rule, or export/query/show semantics, prefer `architecture_context` or `decision_trail` over a standalone `code_history/file_change` record.
 
 ## Non-Negotiables
 - Never edit `.zhar/mem/*.json`, `.zhar/facts.json`, or node `source` fields directly.

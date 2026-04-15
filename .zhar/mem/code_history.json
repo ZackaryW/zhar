@@ -735,5 +735,24 @@
       "significance": "patch"
     },
     "custom": {}
+  },
+  "3499d": {
+    "id": "3499d",
+    "group": "code_history",
+    "node_type": "file_change",
+    "summary": "Add relation-depth expansion to zhar show for component_rel nodes",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": null,
+    "created_at": "2026-04-15T18:05:00Z",
+    "updated_at": "2026-04-15T18:05:00Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "path": "src/zhar/cli/memory.py",
+      "significance": "feature"
+    },
+    "custom": {}
   }
 }

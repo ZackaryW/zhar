@@ -62,6 +62,18 @@ def format_node(node) -> str:
     return "\n".join(lines)
 
 
+def format_related_nodes(nodes) -> str:
+    """Return a compact related-nodes section for show-style CLI output."""
+    if not nodes:
+        return ""
+
+    lines = ["", "── related nodes ───────────────────"]
+    for node in nodes:
+        tag_str = f" [{', '.join(node.tags)}]" if node.tags else ""
+        lines.append(f"[{node.id}] {node.group}/{node.node_type} {node.status} {node.summary!r}{tag_str}")
+    return "\n".join(lines)
+
+
 def visible_metadata(node) -> list[tuple[str, Any]]:
     """Return metadata items that should be shown in CLI output."""
     items = list(node.metadata.items())

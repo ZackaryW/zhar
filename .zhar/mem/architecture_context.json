@@ -19,5 +19,22 @@
       "agent": "copilot"
     },
     "custom": {}
+  },
+  "353ca": {
+    "id": "353ca",
+    "group": "architecture_context",
+    "node_type": "architecture",
+    "summary": "Relation expansion is currently limited to component_rel adjacency and depends on shared component identity for broader traversal",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Context\n\nRecent export/show relation-depth work changed the effective architecture semantics of architecture_context, not just CLI file history.\n\n## Current rule\n\nRelation expansion currently traverses only architecture_context/component_rel nodes through shared from_component / to_component endpoints.\n\n## Constraint\n\nBroader traversal across other node types requires a shared component identity in their metadata. Without that anchor, relation expansion cannot safely connect non-relation nodes into the same component neighborhood.\n\n## Implication\n\nChanges to relation traversal behavior should be recorded in architecture_context first, with code_history used only as supplemental file-level breadcrumbing.",
+    "created_at": "2026-04-15T18:08:22Z",
+    "updated_at": "2026-04-15T18:08:22Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot"
+    },
+    "custom": {}
   }
 }

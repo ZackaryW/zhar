@@ -9,8 +9,8 @@ from pathlib import Path
 
 import click
 
-from zhar.cli.common import format_node, open_store, parse_meta, parse_target_ids
-from zhar.mem.export import export_text
+from zhar.cli.common import format_node, format_related_nodes, open_store, parse_meta, parse_target_ids
+from zhar.mem.export import expand_relation_nodes, export_text
 from zhar.mem.gc import run_gc
 from zhar.mem.group import validate_node_metadata
 from zhar.mem.node import make_node, patch_node
@@ -281,15 +281,25 @@ def remove_command(ctx: click.Context, node_id: str) -> None:
 
 @click.command(name="show")
 @click.argument("node_id")
+@click.option("--relation-depth", default=0, type=int, metavar="N", help="Expand adjacent architecture_context/component_rel nodes up to depth N.")
 @click.pass_context
-def show_command(ctx: click.Context, node_id: str) -> None:
+def show_command(ctx: click.Context, node_id: str, relation_depth: int) -> None:
     """Display all fields of a node."""
     store, _ = open_store(ctx.obj["root"])
     node = store.get(node_id)
     if node is None:
         click.echo(f"Error: node '{node_id}' not found.", err=True)
         sys.exit(1)
-    click.echo(format_node(node))
+    related_nodes = expand_relation_nodes(
+        store,
+        group=node.group,
+        nodes=[node],
+        statuses=[node.status],
+        tags=node.tags,
+        relation_depth=relation_depth,
+    )
+    extra = [related for related in related_nodes if related.id != node.id]
+    click.echo(format_node(node) + format_related_nodes(extra))
 
 
 @click.command(name="query")

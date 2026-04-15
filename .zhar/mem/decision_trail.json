@@ -517,5 +517,23 @@
       "tradeoffs": "simpler UX, less manual path handling, tighter coupling to cached-source discovery"
     },
     "custom": {}
+  },
+  "36954": {
+    "id": "36954",
+    "group": "decision_trail",
+    "node_type": "lesson_learned",
+    "summary": "Memory updates should route durable semantics to owning groups before code_history",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Trigger\n\nRecent agent-added memory updates recorded relation/export/show semantics primarily in code_history, which made code_history the dominant durable memory surface.\n\n## Lesson\n\nWhen a change primarily affects architecture, traversal rules, workflow semantics, or durable behavior, update the owning semantic group first such as architecture_context or decision_trail.\n\n## Application\n\nUse code_history only when the file-level breadcrumb remains independently useful after the semantic record exists.\n\n## Anti-pattern\n\nDo not let repeated CLI-oriented updates default into code_history when the real durable takeaway is an architectural or behavioral rule.",
+    "created_at": "2026-04-15T18:08:22Z",
+    "updated_at": "2026-04-15T18:08:22Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "trigger_event": "memory_routing_drift"
+    },
+    "custom": {}
   }
 }

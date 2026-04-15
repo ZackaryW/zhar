@@ -29,6 +29,7 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 - Every node ID is hex, 4+ characters, and unique within the project.
 - `id`, `group`, `node_type`, and `created_at` are immutable after creation.
 - Group and node-type boundaries are part of the data model; do not blur them by storing issue tracking in `project_dna`, decisions in `code_history`, or supplemental commentary outside `notes`.
+- `code_history` is complementary memory. It should capture file/function/breaking breadcrumbs, not replace the owning semantic group for architectural, workflow, or decision-level changes.
 - Singleton node types may have at most one active node.
 - Facts are always string-to-string across project, global, and effective scopes.
 - `orjson` is the only JSON serializer used by zhar.
@@ -118,12 +119,19 @@ These node types must carry markdown content:
 
 - `zhar query` defaults to all non-`notes` groups unless you pass explicit group/type filters.
 - Use `zhar query --note-depth N` to include attached supplemental notes under matching primary nodes.
+- Use `zhar show <id> --relation-depth N` to append adjacent `architecture_context/component_rel` nodes for a relation record without leaving the seed node's tag boundary.
 - `zhar export` omits the `notes` group by default and exports only each node type's current statuses when `--status` is not provided.
 - Use `zhar export --tag TAG` when you need a namespace- or project-scoped snapshot; repeated `--tag` options are AND-combined.
 - Use `zhar export --relation-depth N` to expand adjacent `architecture_context/component_rel` nodes from the exported seed set.
 - `zhar export --relation-depth N` preserves the active tag and status boundary for expanded nodes; it does not cross into differently tagged relation nodes.
 - Relation-depth expansion is currently limited to `architecture_context/component_rel` adjacency through shared `from_component` / `to_component` endpoints.
 - Use `zhar export --with-runtime-context` when you want group-defined runtime context blocks included in the output.
+
+## Memory Routing Heuristic
+
+- Prefer the owning semantic group first: architecture and traversal semantics belong in `architecture_context`; design choices and routing rationale belong in `decision_trail`; goals and requirements belong in `project_dna`.
+- Add `code_history/file_change` only when the file-level breadcrumb is independently useful after the semantic record exists.
+- Do not let repeated CLI or implementation work default into `code_history` when the durable takeaway is really a change in memory semantics or architectural behavior.
 
 ## Source Markers
 

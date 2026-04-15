@@ -209,3 +209,53 @@ def test_export_text_applies_namespace_before_relation_expansion_end_to_end(tmp_
     assert "Web requirement" in exported
     assert "web -> api" in exported
     assert "api -> shared-db" not in exported
+
+
+def test_cli_show_applies_relation_expansion_with_tag_boundary_end_to_end(tmp_path) -> None:
+    """CLI show should expand connected relation nodes without crossing the seed tag boundary."""
+    runner = CliRunner()
+    store = MemStore(tmp_path / ".zhar")
+
+    base = make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="web -> api",
+        tags=["project:web"],
+        metadata={
+            "from_component": "web",
+            "to_component": "api",
+            "rel_type": "calls",
+        },
+    )
+    store.save(base)
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="api -> db",
+        tags=["project:web"],
+        metadata={
+            "from_component": "api",
+            "to_component": "db",
+            "rel_type": "calls",
+        },
+    ))
+    store.save(make_node(
+        group="architecture_context",
+        node_type="component_rel",
+        summary="api -> shared-db",
+        tags=["project:api"],
+        metadata={
+            "from_component": "api",
+            "to_component": "shared-db",
+            "rel_type": "calls",
+        },
+    ))
+
+    result = runner.invoke(cli, [
+        "--root", str(store.root), "show", base.id, "--relation-depth", "1",
+    ])
+
+    assert result.exit_code == 0, result.output
+    assert "web -> api" in result.output
+    assert "api -> db" in result.output
+    assert "api -> shared-db" not in result.output

@@ -327,6 +327,70 @@ class TestShow:
         assert "project_dna" in result.output
         assert "core_requirement" in result.output
 
+    def test_show_can_expand_related_component_rel_nodes_within_tag_namespace(self, project, runner):
+        store = MemStore(project)
+        base = make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="web -> api",
+            tags=["project:web"],
+            metadata={
+                "from_component": "web",
+                "to_component": "api",
+                "rel_type": "calls",
+            },
+        )
+        store.save(base)
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> db",
+            tags=["project:web"],
+            metadata={
+                "from_component": "api",
+                "to_component": "db",
+                "rel_type": "calls",
+            },
+        ))
+        store.save(make_node(
+            group="architecture_context",
+            node_type="component_rel",
+            summary="api -> shared-db",
+            tags=["project:api"],
+            metadata={
+                "from_component": "api",
+                "to_component": "shared-db",
+                "rel_type": "calls",
+            },
+        ))
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "show", base.id, "--relation-depth", "1",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "web -> api" in result.output
+        assert "related nodes" in result.output.lower()
+        assert "api -> db" in result.output
+        assert "api -> shared-db" not in result.output
+
+    def test_show_relation_depth_is_noop_for_non_relation_nodes(self, project, runner):
+        add = runner.invoke(cli, [
+            "--root", str(project), "add",
+            "project_dna", "core_requirement", "A requirement",
+            "--content", "## Why\n\nNeeded.",
+        ])
+        import re
+        nid = re.search(r"Added ([0-9a-f]{4,5})", add.output).group(1)
+
+        result = runner.invoke(cli, [
+            "--root", str(project), "show", nid, "--relation-depth", "2",
+        ])
+
+        assert result.exit_code == 0, result.output
+        assert "A requirement" in result.output
+        assert "related nodes" not in result.output.lower()
+
     def test_show_unknown_id_exits_nonzero(self, project, runner):
         result = runner.invoke(cli, ["--root", str(project), "show", "zzzz"])
         assert result.exit_code != 0
