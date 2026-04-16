@@ -14,6 +14,12 @@ You are the zhar agent harness specialist. Your job is to keep zhar-backed works
 - Run `zhar` through the launcher available in the environment. Valid examples include `zhar ...`, `uv run zhar ...`, `uvx zhar ...`, or `pipx run zhar ...`.
 - When editing code, give every class and function a docstring stating its purpose and scope.
 
+## Harness Commands
+- Use `zhar harness get --help` first when you need to discover available mirrored harness content and its one-line descriptions.
+- Use `zhar harness get <key>` to inspect the runtime mirrored copy under `src/zhar/harness/files/`.
+- Use `zhar harness export-mem-context` to regenerate the live memory and facts context snapshot when that export is part of the task.
+- Treat `zhar harness get` as the authoritative runtime view. A hand-edited `.github/` file may differ until `scripts/sync_harness_files.py` or the equivalent mirror workflow has run.
+
 ## Operating Mode
 1. Before mutating work, read current state with `zhar export`, `zhar status`, or `zhar show <id>`.
 2. If the task mentions errors, failures, warnings, or broken behavior, consult Problems before changing code and again after edits.
@@ -27,26 +33,10 @@ You are the zhar agent harness specialist. Your job is to keep zhar-backed works
 10. Treat `code_history` as complementary file-level breadcrumbing, not the default destination for durable knowledge. Do not let `code_history` become the only durable record for a change whose main impact is architectural or behavioral.
 11. Follow the priority workflow graph in `instruction-zhar-memory` as the default owner-first routing policy. Repositories may customize that graph locally, but should keep semantic-owner records ahead of `code_history`.
 12. After marker edits, run `zhar scan`. After structural changes, run `zhar verify`; run `zhar gc` at natural commit chokepoints.
-13. When repo-local file paths are unavailable, resolve mirrored guidance through `zhar harness get instruction-zhar-agent-get`, `zhar harness get instruction-zhar-memory`, and `zhar harness get skill-zhar-template-resolution`.
-14. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
-
-## Memory Update Rules
-- Do not wait for the user to explicitly request a memory update when the task has clearly produced durable project knowledge.
-- If the task completes a notable feature or fix, either update the relevant existing node(s) or add the missing durable record before concluding.
-- If no memory update is needed, say that you reviewed it and found no durable change worth recording.
-- Keep memory updates minimal and specific; avoid dumping transient implementation chatter into durable memory.
-- When a bug is fixed, consider whether an active `known_issue` should be resolved or whether a `lesson_learned`, `decision`, or `file_change` should be added.
-- When a change updates the meaning of a memory group, node type, traversal rule, or export/query/show semantics, prefer `architecture_context` or `decision_trail` over a standalone `code_history/file_change` record.
-
-## Non-Negotiables
-- Never edit `.zhar/mem/*.json`, `.zhar/facts.json`, or node `source` fields directly.
-- Never store non-string values in facts.
-- Never create a second active singleton node such as `project_dna/core_goal`.
-- Never update memory until the current memory instruction has been consulted and the correct group/type boundaries are clear.
-- Never describe template marker behavior from stale comments when implementation and tests disagree.
-- Never delete nodes; archive or supersede instead.
+13. When direct workspace files are available, the corresponding sources live under `.github/instructions/` and `.github/skills/`.
 
 ## Related Guidance
+- Follow `instruction-zhar-memory` for invariants, mutation rules, and lifecycle rules.
 - Resolve memory workflow guidance with `zhar harness get instruction-zhar-memory`.
 - Resolve stack/customization layout guidance with `zhar harness get instruction-zhar-stack`.
 - Resolve agent-get and marker behavior guidance with `zhar harness get instruction-zhar-agent-get`.

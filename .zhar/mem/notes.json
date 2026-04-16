@@ -52,5 +52,23 @@
       "target_ids": "3f2ae"
     },
     "custom": {}
+  },
+  "48aa2": {
+    "id": "48aa2",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "## Update",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Update\n\nHarness guidance now treats `zhar harness get --help` as the discoverability entry point and `zhar harness get <key>` as the authoritative mirrored runtime view from `src/zhar/harness/files/`.\n\n## Workflow split\n\nRepo-authored harness workflow now lives in `zhar-harness-workflow`, covering `.github/` edits, mirror sync, runtime verification, and `--check`.\n\nSafe durable-memory mutation now lives in `zhar-memory-mutation`, covering read-state-first, owner-first routing, CLI mutation, and validation.\n\n## Policy split\n\n`zhar.agent.md` now points memory invariants and lifecycle rules back to `instruction-zhar-memory` instead of duplicating those sections inline.",
+    "created_at": "2026-04-16T18:52:03Z",
+    "updated_at": "2026-04-16T18:52:03Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "25078"
+    },
+    "custom": {}
   }
 }

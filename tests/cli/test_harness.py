@@ -7,6 +7,7 @@ from pathlib import Path
 from click.testing import CliRunner
 
 from zhar.cli import cli
+from zhar.harness.getter import list_harness_entries
 
 
 def _init_project(runner: CliRunner, tmp_path: Path) -> Path:
@@ -43,24 +44,29 @@ class TestHarnessGet:
     def test_get_help_lists_flattened_keys_with_description_sentence(self) -> None:
         """The get help text should advertise available keys and summaries."""
         runner = CliRunner()
+        entries = list_harness_entries()
 
-        result = runner.invoke(cli, ["harness", "get", "--help"])
+        result = runner.invoke(cli, ["harness", "get", "--help"], terminal_width=200)
 
         assert result.exit_code == 0, result.output
-        assert 'agent-zhar' in result.output
-        assert 'instruction-zhar-memory' in result.output
-        assert 'skill-zhar-template-resolution' in result.output
-        assert 'with the zhar agent harness in any workspace' in result.output
+        assert 'Available keys:' in result.output
+        for entry in entries:
+            assert entry.key in result.output
+        assert any(entry.kind == 'skill' for entry in entries)
+        assert any(
+            entry.summary and entry.summary in result.output for entry in entries
+        )
 
     def test_get_unknown_key_fails_with_available_keys(self) -> None:
         """Unknown flattened keys should produce a helpful error."""
         runner = CliRunner()
+        entries = list_harness_entries()
 
         result = runner.invoke(cli, ["harness", "get", "skill-missing"])
 
         assert result.exit_code != 0
         assert 'Unknown harness file' in result.output
-        assert 'skill-zhar-template-resolution' in result.output
+        assert entries[0].key in result.output
 
 
 class TestHarnessContextExport:

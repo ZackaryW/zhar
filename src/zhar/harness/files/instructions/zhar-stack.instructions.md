@@ -53,6 +53,7 @@ Guidelines:
 - `zhar stack install <name> <repo> --kind <kind>` records the item in the registry using the same cached-source lookup model as `stack fetch`.
 - `--source <path>` is optional and acts as an explicit override that is still validated against cached sources.
 - `zhar stack sync` renders all installed items and writes them to `.github/agents/` by default.
+- After `zhar stack sync` or repo-authored harness edits, use `zhar harness get --help` to discover available flattened keys and `zhar harness get <key>` to verify the mirrored runtime view.
 
 ## Lookup Strategy
 
