@@ -1,6 +1,6 @@
 [project]
 name = "zhar"
-version = "0.3.0"
+version = "0.3.1"
 description = "Agent memory harness — group-based, pluggable backends, facts-driven"
 readme = "README.md"
 authors = [
