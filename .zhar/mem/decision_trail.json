@@ -681,5 +681,23 @@
       "agent": "zhar-agent"
     },
     "custom": {}
+  },
+  "4b848": {
+    "id": "4b848",
+    "group": "decision_trail",
+    "node_type": "research_finding",
+    "summary": "Harness install now targets mirrored harness get files",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Context\n\n`zhar harness install` had remained wired to the old generated memory-context output even though repo-authored harness files are now exposed through `zhar harness get` and the live snapshot path moved to `zhar harness export-mem-context`.\n\n## Outcome\n\n`zhar harness install <flattened-key>` now installs the mirrored authored file addressed by `zhar harness get`, using the matching `.github/` destination by default. The generated live memory/facts snapshot remains on `zhar harness export-mem-context` and the legacy `zhar install` compatibility alias.",
+    "created_at": "2026-04-16T19:39:30Z",
+    "updated_at": "2026-04-16T19:39:30Z",
+    "expires_at": null,
+    "metadata": {
+      "outcome": "adopted",
+      "source_ref": "src/zhar/cli/harness.py"
+    },
+    "custom": {}
   }
 }

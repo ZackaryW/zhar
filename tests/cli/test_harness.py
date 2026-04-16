@@ -122,38 +122,48 @@ class TestHarnessContextExport:
         assert 'Build zhar' in content
         assert 'Memory snapshot' in content
 
-    def test_install_context_alias_writes_requested_file(self, tmp_path: Path) -> None:
-        """`harness install context` should delegate to export-mem-context."""
+    def test_install_agent_key_writes_default_workspace_path(self, tmp_path: Path) -> None:
+        """`harness install agent-...` should write the mirrored agent file."""
         runner = CliRunner()
-        zhar_root = _init_project(runner, tmp_path)
-        out_path = tmp_path / '.github' / 'agents' / 'legacy-context.agent.md'
 
-        add_result = runner.invoke(
-            cli,
-            [
-                '--root',
-                str(zhar_root),
-                'add',
-                'project_dna',
-                'core_goal',
-                'Ship repo harness files',
-            ],
-        )
-        assert add_result.exit_code == 0, add_result.output
+        with runner.isolated_filesystem(temp_dir=str(tmp_path)):
+            result = runner.invoke(cli, ['harness', 'install', 'agent-zhar'])
+            out_path = Path.cwd() / '.github' / 'agents' / 'zhar.agent.md'
 
-        result = runner.invoke(
-            cli,
-            [
-                '--root',
-                str(zhar_root),
-                'harness',
-                'install',
-                'context',
-                '--out',
-                str(out_path),
-            ],
-        )
+            assert result.exit_code == 0, result.output
+            assert out_path.exists()
+            content = out_path.read_text(encoding='utf-8')
+            assert 'name: zhar-agent' in content
+            assert 'You are the zhar agent harness specialist.' in content
 
-        assert result.exit_code == 0, result.output
-        assert out_path.exists()
-        assert 'Ship repo harness files' in out_path.read_text(encoding='utf-8')
+    def test_install_skill_key_writes_requested_file(self, tmp_path: Path) -> None:
+        """`harness install skill-... --out` should write the mirrored skill file."""
+        runner = CliRunner()
+        out_path = tmp_path / 'custom' / 'workflow.skill.md'
+
+        with runner.isolated_filesystem(temp_dir=str(tmp_path)):
+            result = runner.invoke(
+                cli,
+                [
+                    'harness',
+                    'install',
+                    'skill-zhar-harness-workflow',
+                    '--out',
+                    str(out_path),
+                ],
+            )
+
+            assert result.exit_code == 0, result.output
+            assert out_path.exists()
+            content = out_path.read_text(encoding='utf-8')
+            assert 'name: zhar-harness-workflow' in content
+            assert '# zhar Harness Workflow' in content
+
+    def test_install_context_target_reports_export_mem_context_migration(self) -> None:
+        """`harness install context` should point callers at export-mem-context."""
+        runner = CliRunner()
+
+        result = runner.invoke(cli, ['harness', 'install', 'context'])
+
+        assert result.exit_code != 0
+        assert 'export-mem-context' in result.output

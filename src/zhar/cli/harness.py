@@ -8,7 +8,7 @@ import click
 
 from zhar.cli.common import open_store
 from zhar.harness.getter import get_harness_entry, list_harness_entries, read_harness_file
-from zhar.harness.installer import export_mem_context_file, install_context_file
+from zhar.harness.installer import export_mem_context_file, install_harness_entry
 from zhar.harness.paths import default_context_output_path
 from zhar.utils.facts import load_effective_facts, project_facts_path
 
@@ -22,8 +22,8 @@ def _flattened_key_rows() -> list[tuple[str, str]]:
     return rows
 
 
-class HarnessGetCommand(click.Command):
-    """Render dynamic `harness get` help with a readable available-keys section."""
+class HarnessKeyCommand(click.Command):
+    """Render dynamic help with a readable available-keys section."""
 
     def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
         """Write command help plus a definition list of available flattened keys."""
@@ -45,7 +45,7 @@ def harness_group(ctx: click.Context) -> None:
 
 @harness_group.command(
     "get",
-    cls=HarnessGetCommand,
+    cls=HarnessKeyCommand,
     help="Print a mirrored harness file by flattened key.",
 )
 @click.argument("key")
@@ -76,24 +76,34 @@ def export_mem_context(ctx: click.Context, out: str | None) -> None:
     click.echo(f"Written: {output}  ({output.stat().st_size} bytes)")
 
 
-@harness_group.command("install")
-@click.argument("target", type=click.Choice(["context"]))
+@harness_group.command(
+    "install",
+    cls=HarnessKeyCommand,
+    help="Install a mirrored harness file by flattened key into the workspace.",
+)
+@click.argument("key")
 @click.option(
     "--out",
     default=None,
     type=click.Path(),
     metavar="FILE",
-    help="Output path (default: .github/agents/zhar-context.agent.md).",
+    help="Output path (default: matching .github destination for the flattened key).",
 )
-@click.pass_context
-def harness_install(ctx: click.Context, target: str, out: str | None) -> None:
-    """Install supported legacy harness outputs such as the memory-context file."""
-    del target
-    store, zhar_root = open_store(ctx.obj["root"])
-    facts = load_effective_facts(project_facts_path(zhar_root))
-    output = Path(out) if out else default_context_output_path()
-    install_context_file(store, facts, output)
-    click.echo(f"Written: {output}  ({output.stat().st_size} bytes)")
+def harness_install(key: str, out: str | None) -> None:
+    """Install a mirrored harness file by flattened key into the workspace."""
+    if key == "context":
+        raise click.ClickException(
+            "Legacy 'harness install context' moved to 'zhar harness export-mem-context'."
+        )
+
+    try:
+        entry = get_harness_entry(key)
+    except KeyError as exc:
+        raise click.ClickException(str(exc)) from exc
+
+    output = Path(out) if out else None
+    written = install_harness_entry(entry, output)
+    click.echo(f"Written: {written}  ({written.stat().st_size} bytes)")
 
 
 def register_harness_commands(cli_group: click.Group) -> None:

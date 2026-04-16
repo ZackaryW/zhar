@@ -18,15 +18,17 @@ user-invocable: true
 
 1. Edit the source-of-truth files under `.github/`.
 2. Discover the runtime keys with `zhar harness get --help` when you need to inspect available mirrored content.
-3. Sync the mirror with `uv run python scripts/sync_harness_files.py`.
-4. Verify the runtime view with `zhar harness get <flattened-key>` against the mirrored copy in `src/zhar/harness/files/`.
-5. If the task involves the generated memory-context snapshot, run `uv run zhar harness export-mem-context` or pass `--out` for an explicit destination.
-6. Before push, run `uv run python scripts/sync_harness_files.py --check` so stale or unexpected mirrored files fail fast.
+3. Use `zhar harness install <flattened-key>` when you need to write a mirrored runtime file back into a workspace `.github/` destination.
+4. Sync the mirror with `uv run python scripts/sync_harness_files.py`.
+5. Verify the runtime view with `zhar harness get <flattened-key>` against the mirrored copy in `src/zhar/harness/files/`.
+6. If the task involves the generated memory-context snapshot, run `uv run zhar harness export-mem-context` or pass `--out` for an explicit destination.
+7. Before push, run `uv run python scripts/sync_harness_files.py --check` so stale or unexpected mirrored files fail fast.
 
 ## Fast Rules
 
 - Treat `.github/` as the source of truth during development.
 - Treat `src/zhar/harness/files/` as the runtime mirror read by `zhar harness get`.
+- Treat `zhar harness install <flattened-key>` as the way to materialize one mirrored authored file into `.github/`.
 - If `.github/` and `harness get` disagree, the mirror is stale until the sync script runs.
 - Use `zhar harness get --help` as the discoverability entry point, not guesswork about keys.
 - Keep `export-mem-context` separate from static authored agent files.

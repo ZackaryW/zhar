@@ -519,16 +519,32 @@ uv run zhar harness get skill-zhar-template-resolution
 
 `zhar harness get --help` dynamically lists the available keys and derives their one-line help text from the first sentence of each file's `description:` frontmatter.
 
+### Installing mirrored harness files
+
+Use `harness install` to write the same mirrored authored files exposed by `harness get` back into a workspace `.github/` tree:
+
+```bash
+uv run zhar harness install agent-zhar
+uv run zhar harness install instruction-zhar-memory
+uv run zhar harness install skill-zhar-harness-workflow
+uv run zhar harness install skill-zhar-harness-workflow --out .github/skills/custom/SKILL.md
+```
+
+By default the destination is derived from the flattened key:
+
+- `agent-*` -> `.github/agents/<name>.agent.md`
+- `instruction-*` -> `.github/instructions/<name>.instructions.md`
+- `skill-*` -> `.github/skills/<name>/SKILL.md`
+
 ### Legacy memory-context export
 
-The older generated context summary still exists, but it is now explicitly the memory-context export path rather than the static agent file path:
+The older generated context summary still exists, but it is now explicitly the memory-context export path rather than the static authored harness file path:
 
 ```bash
 uv run zhar harness export-mem-context
 uv run zhar harness export-mem-context --out .github/agents/custom-context.agent.md
 
-# legacy alias
-uv run zhar harness install context
+# legacy compatibility alias
 uv run zhar install
 ```
 
@@ -763,21 +779,27 @@ uv run zhar facts list
 uv run zhar facts list --scope global
 ```
 
-## Agent Context File
+## Memory Context Export
 
-zhar can generate an agent-facing context file from memory plus facts:
+zhar can generate a legacy agent-facing context file from memory plus facts:
 
 ```bash
-uv run zhar install
+uv run zhar harness export-mem-context
 ```
 
 That writes:
 
 ```text
-.github/agents/zhar.agent.md
+.github/agents/zhar-context.agent.md
 ```
 
-Use it when you want an AI agent to start with project-specific context instead of rebuilding that context from scratch each session.
+Use it when you want a generated live memory/facts snapshot in a standalone file instead of the authored mirrored harness files.
+
+The top-level alias still exists for compatibility:
+
+```bash
+uv run zhar install
+```
 
 Remove it with:
 

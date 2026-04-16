@@ -1,4 +1,4 @@
-"""Harness installer — writes generated memory-context instruction files.
+"""Harness installer helpers for mirrored files and generated memory-context output.
 
 ``install_agent_file`` renders a generated context file (typically
 ``.github/agents/zhar-context.agent.md``) from a combination of:
@@ -15,7 +15,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from pathlib import Path
 
+from zhar.harness.getter import HarnessEntry
 from zhar.harness.paths import default_context_output_path
+from zhar.harness.paths import default_harness_install_path
 from zhar.mem.export import export_text
 from zhar.mem.store import MemStore
 from zhar.utils.facts import Facts
@@ -96,6 +98,14 @@ def export_mem_context_file(
     """Write the generated legacy memory-context file to *output*."""
     target = output if output is not None else default_context_output_path()
     return install_agent_file(store, facts, target)
+
+
+def install_harness_entry(entry: HarnessEntry, output: Path | None = None) -> Path:
+    """Write a mirrored harness entry to its default or requested workspace path."""
+    target = output if output is not None else default_harness_install_path(entry.kind, entry.path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(entry.path.read_text(encoding="utf-8"), encoding="utf-8")
+    return target
 
 
 def install_context_file(
