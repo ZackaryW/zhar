@@ -664,5 +664,22 @@
       "tradeoffs": "always-available-generic-edges-simpler-traversal-semantics-keeps-component_rel-descriptive-adds-empty-links-group-to-stats"
     },
     "custom": {}
+  },
+  "4a0db": {
+    "id": "4a0db",
+    "group": "decision_trail",
+    "node_type": "decision",
+    "summary": "Added a repo-local Python unit-test agent that enforces concrete coverage matrices, hard validation guards, combinatorial logic tests, malformed-input tests, and adversarial-case checks for Python test work.",
+    "status": "active",
+    "tags": [],
+    "source": ".github/agents/python-tool-unit-test-creator.agent.md",
+    "content": null,
+    "created_at": "2026-04-16T19:19:00Z",
+    "updated_at": "2026-04-16T19:19:00Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "zhar-agent"
+    },
+    "custom": {}
   }
 }

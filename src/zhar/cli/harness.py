@@ -13,14 +13,28 @@ from zhar.harness.paths import default_context_output_path
 from zhar.utils.facts import load_effective_facts, project_facts_path
 
 
-def _flattened_key_help() -> str:
-    """Return dynamic help text listing flattened harness keys and summaries."""
-    lines = ["Print a mirrored harness file by flattened key.", "", "Available keys:"]
+def _flattened_key_rows() -> list[tuple[str, str]]:
+    """Return flattened harness keys and summaries for CLI help rendering."""
+    rows: list[tuple[str, str]] = []
     for entry in list_harness_entries():
         summary = entry.summary or entry.description or "No description."
-        lines.append(f"  {entry.key}")
-        lines.append(f"    {summary}")
-    return "\n".join(lines)
+        rows.append((entry.key, summary))
+    return rows
+
+
+class HarnessGetCommand(click.Command):
+    """Render dynamic `harness get` help with a readable available-keys section."""
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        """Write command help plus a definition list of available flattened keys."""
+        self.format_usage(ctx, formatter)
+        self.format_help_text(ctx, formatter)
+        self.format_options(ctx, formatter)
+        rows = _flattened_key_rows()
+        if rows:
+            with formatter.section("Available keys"):
+                formatter.write_dl(rows)
+        self.format_epilog(ctx, formatter)
 
 
 @click.group(name="harness")
@@ -29,7 +43,11 @@ def harness_group(ctx: click.Context) -> None:
     """Work with repo-centric harness files and legacy memory-context export."""
 
 
-@harness_group.command("get", help=_flattened_key_help())
+@harness_group.command(
+    "get",
+    cls=HarnessGetCommand,
+    help="Print a mirrored harness file by flattened key.",
+)
 @click.argument("key")
 def harness_get(key: str) -> None:
     """Print the mirrored harness file addressed by flattened *key*."""

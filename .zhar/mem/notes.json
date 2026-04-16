@@ -70,5 +70,23 @@
       "target_ids": "25078"
     },
     "custom": {}
+  },
+  "49496": {
+    "id": "49496",
+    "group": "notes",
+    "node_type": "note",
+    "summary": "## Clarified usage policy",
+    "status": "active",
+    "tags": [],
+    "source": null,
+    "content": "## Clarified usage policy\n\nThe repo memory instruction now states when `links/node_link` should be created: only for generic cross-record relationships that should participate in later `show --relation-depth` or `export --relation-depth` traversal.\n\n## Explicit split\n\n- `node_link` is the generic traversable edge between existing records.\n- `notes/note` is for attached commentary that should not drive traversal.\n- `architecture_context/component_rel` remains specific to architecture component relationships and is not the generic link primitive.\n\n## Workflow consequence\n\nAgents should create the owning semantic record first and add `node_link` only when the edge is independently useful for later inspection, query, or export.",
+    "created_at": "2026-04-16T19:11:54Z",
+    "updated_at": "2026-04-16T19:11:54Z",
+    "expires_at": null,
+    "metadata": {
+      "agent": "copilot",
+      "target_ids": "4768f"
+    },
+    "custom": {}
   }
 }

@@ -46,16 +46,29 @@ class TestHarnessGet:
         runner = CliRunner()
         entries = list_harness_entries()
 
-        result = runner.invoke(cli, ["harness", "get", "--help"], terminal_width=200)
+        result = runner.invoke(cli, ["harness", "get", "--help"], terminal_width=100)
 
         assert result.exit_code == 0, result.output
-        assert 'Available keys:' in result.output
+        assert '\nAvailable keys:\n' in result.output
         for entry in entries:
             assert entry.key in result.output
         assert any(entry.kind == 'skill' for entry in entries)
         assert any(
             entry.summary and entry.summary in result.output for entry in entries
         )
+
+    def test_get_help_formats_keys_as_a_separate_section(self) -> None:
+        """The get help text should render the dynamic key list as its own section."""
+        runner = CliRunner()
+        first_entry = list_harness_entries()[0]
+
+        result = runner.invoke(cli, ["harness", "get", "--help"], terminal_width=80)
+
+        assert result.exit_code == 0, result.output
+        assert '\nAvailable keys:\n' in result.output
+        assert f'  {first_entry.key}' in result.output
+        assert 'Options:\n  --help' in result.output
+        assert result.output.index('Available keys:') > result.output.index('Options:')
 
     def test_get_unknown_key_fails_with_available_keys(self) -> None:
         """Unknown flattened keys should produce a helpful error."""

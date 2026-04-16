@@ -23,15 +23,17 @@ user-invocable: true
    - `zhar set-status ...` for lifecycle changes.
    - `zhar note ...` or `zhar add-note ...` for supplemental notes.
    - `zhar facts set` or `zhar facts unset` for facts.
-4. Use stdin or environment variables only when the content body is too large for a literal argument and ensure the environment variable already exists.
-5. Run `zhar scan` after source-marker edits.
-6. Run `zhar show <id>`, `zhar query --note-depth 1`, or `zhar export` to confirm the resulting durable state.
-7. Run `zhar verify` after structural changes and `zhar gc` at commit or handoff chokepoints.
+4. If two durable records need a generic relationship that later `show` or `export` traversal should follow, add `links/node_link` only after the primary semantic record already exists.
+5. Use stdin or environment variables only when the content body is too large for a literal argument and ensure the environment variable already exists.
+6. Run `zhar scan` after source-marker edits.
+7. Run `zhar show <id>`, `zhar query --note-depth 1`, or `zhar export` to confirm the resulting durable state.
+8. Run `zhar verify` after structural changes and `zhar gc` at commit or handoff chokepoints.
 
 ## Fast Rules
 
 - Do not edit `.zhar/` JSON or facts files by hand.
 - Create the owning semantic record before optional `code_history` breadcrumbs.
+- Add `links/node_link` only for generic cross-record traversal edges; use `notes` for attached commentary and `component_rel` only for component relationships.
 - Use `notes` only for supplemental detail that should stay out of normal exports.
 - Facts are string-to-string only.
 - Archive or supersede durable records when appropriate; do not silently discard project history.

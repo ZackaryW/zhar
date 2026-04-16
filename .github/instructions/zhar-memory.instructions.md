@@ -96,6 +96,22 @@ description: "Use when working with zhar-backed memory, node CRUD, facts, source
 |---|---|---|---|
 | `node_link` | no | `active`, `archived` | `agent`, `from_id`, `to_id`, `rel_type` |
 
+## When To Use Links
+
+- Use `links/node_link` when a relationship between two existing records should be traversable by `zhar show --relation-depth N` or `zhar export --relation-depth N`.
+- Use `node_link` for generic cross-record edges. It is the normal linking mechanism when the relationship is not specifically an architecture component-to-component description.
+- Create the owning semantic records first, then add `node_link` only when the edge is independently useful for later query, export, or inspection.
+- Use `notes/note` when the extra information is supplemental commentary attached to a primary record rather than a traversable relationship.
+- Use `architecture_context/component_rel` only for architecture component relationships described by `from_component` and `to_component`; do not use it as the generic node-linking primitive.
+
+Examples:
+
+- Link a `problem_tracking/known_issue` to the `decision_trail/decision` that resolved or superseded it when relation-depth should surface both records together.
+- Link a `project_dna/core_requirement` to an `architecture_context/architecture` record when the implementation relationship should be traversable later.
+- Link a `code_history/breaking_change` to a `decision_trail/decision` or `decision_trail/adr` when migration or rollout rationale should travel with the change record.
+- Do not create `node_link` for explanation that belongs in an attached note.
+- Do not use `component_rel` unless both endpoints are architecture components rather than record IDs.
+
 ### notes
 
 | Type | Memory-backed | Statuses | Metadata |
@@ -162,6 +178,7 @@ These node types must carry markdown content:
 ## Memory Routing Heuristic
 
 - Prefer the owning semantic group first: architecture and traversal semantics belong in `architecture_context`; design choices and routing rationale belong in `decision_trail`; goals and requirements belong in `project_dna`.
+- Add `links/node_link` after the primary semantic record only when a generic cross-record edge should participate in later relation-depth traversal.
 - Add `code_history/file_change` only when the file-level breadcrumb is independently useful after the semantic record exists.
 - Do not let repeated CLI or implementation work default into `code_history` when the durable takeaway is really a change in memory semantics or architectural behavior.
 
